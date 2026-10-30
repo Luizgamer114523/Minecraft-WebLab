@@ -42,3 +42,15 @@ O protótipo voxel simplificado anterior não é uma conversão do APK e não se
 
 ## Escopo e segurança
 Esta foi uma inspeção estática de estrutura, dependências e metadados. Não houve execução do jogo, depuração dinâmica, nem extração/publicação dos recursos protegidos. O repositório não deve receber o APK completo, bibliotecas nativas ou pacotes comerciais de recursos.
+
+## Decisão de arquitetura (30/10/2026)
+A direção escolhida para investigação é **WebAssembly (WASM)**, com execução no próprio navegador. Streaming remoto não é o caminho principal.
+
+### Bloqueio atual
+O APK fornece binários Android/AArch64, não o código-fonte do motor. Emscripten compila código-fonte C/C++ (ou objetos/bitcode compatíveis), não converte diretamente um ELF Android `.so` em um módulo WASM funcional. Uma tradução binária exigiria reimplementar/emular o ambiente Android, JNI, chamadas de sistema, bibliotecas gráficas, áudio e demais dependências; não é uma conversão direta e não há garantia de compatibilidade.
+
+### Próxima etapa técnica
+1. Procurar documentação e um pipeline de build Web oficialmente autorizado para o motor.
+2. Verificar disponibilidade de código-fonte/licenças e dependências que possam ser compiladas para WASM.
+3. Se não houver acesso autorizado ao código-fonte, documentar o bloqueio e não fingir que a biblioteca nativa foi portada.
+4. Manter os recursos extraídos apenas como referência técnica; não publicar no repositório APK, bibliotecas nativas ou pacotes comerciais.
