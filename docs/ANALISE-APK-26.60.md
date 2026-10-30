@@ -54,3 +54,29 @@ O APK fornece binários Android/AArch64, não o código-fonte do motor. Emscript
 2. Verificar disponibilidade de código-fonte/licenças e dependências que possam ser compiladas para WASM.
 3. Se não houver acesso autorizado ao código-fonte, documentar o bloqueio e não fingir que a biblioteca nativa foi portada.
 4. Manter os recursos extraídos apenas como referência técnica; não publicar no repositório APK, bibliotecas nativas ou pacotes comerciais.
+
+
+
+## Auditoria complementar dos novos arquivos (30/10/2026)
+
+### Integridade dos arquivos
+- minecraft-26-60-.apk passou no teste CRC integral do ZIP interno: sem entradas corrompidas.
+- minecraft-26-60-.zip contém somente o APK e também passou na verificação CRC.
+- tudo do Minecraft.zip tem 361.224.418 bytes e 35 entradas. Os 34 arquivos externos menores foram descompactados corretamente, mas a entrada aninhada "tudo do Minecraft/tudo do Minecraft.zip" (357.274.540 bytes descompactados) falhou durante a descompressão DEFLATE com erro de bloco inválido. Portanto, esse arquivo compactado aninhado não deve ser usado como fonte confiável; o APK separado está íntegro e contém o inventário completo.
+
+### Inspeção ELF da biblioteca principal
+- Foi extraída temporariamente para análise local a biblioteca lib/arm64-v8a/libminecraftpe.so (342.231.392 bytes), sem adicioná-la ao GitHub.
+- ELF64, little-endian, tipo ET_DYN, máquina AArch64.
+- A tabela .dynsym contém 91.693 símbolos dinâmicos. Isso oferece nomes úteis para análise estática, mas não equivale ao código-fonte nem a símbolos completos de depuração; a biblioteca não apresenta seções DWARF de debug no inventário ELF.
+- Dependências dinâmicas observadas: libpairipcore.so, libGLESv2.so, libPlayFabMultiplayer.so, libEGL.so, libfmod.so, liblog.so, libHttpClient.Android.so, libmaesdk.so, libdl.so, libandroid.so, libc++_shared.so, libm.so e libc.so.
+- Importa APIs Android NDK como AAssetManager, AConfiguration, ALooper e ANativeWindow. Também importa chamadas EGL e OpenGL ES, incluindo criação de contexto/surface, eglSwapBuffers, glBindTexture, glDrawElements e glShaderSource.
+- Foram encontrados pontos JNI ligados ao Android GameActivity e à camada Java do Minecraft, incluindo Java_com_google_androidgamesdk_GameActivity_initializeNativeCode e diversos métodos Java_com_mojang_minecraftpe_MainActivity_native...
+
+### Implicações para o port web
+O acoplamento Android está confirmado em nível de ABI, não apenas por metadados do APK. Um port WASM teria de substituir/adaptar, no mínimo:
+1. Carregamento de assets Android (AAssetManager) por um sistema de arquivos virtual/web.
+2. Janela e ciclo de vida (ANativeWindow, ALooper e GameActivity) por canvas, eventos e ciclo de vida do navegador.
+3. EGL/OpenGL ES por uma camada web compatível com WebGL ou WebGPU, incluindo diferenças de contexto, shaders e recursos.
+4. Áudio, entrada, threads, rede, armazenamento, autenticação e serviços Android/Xbox por implementações web autorizadas e compatíveis.
+
+**Conclusão atualizada:** o APK está íntegro e oferece uma base rica para engenharia reversa estática. A biblioteca principal ainda é um binário Android ARM64 fortemente dependente de APIs Android e não pode ser carregada diretamente no navegador. Os símbolos exportados ajudam a mapear componentes, mas não eliminam a necessidade de código-fonte/pipeline autorizado ou de um esforço de portabilidade de grande porte.
