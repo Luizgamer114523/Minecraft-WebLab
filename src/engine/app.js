@@ -144,13 +144,13 @@ async function startEngine(pack) {
     loading.classList.add("hidden");
     hud.hidden = false;
     $("world-label").textContent = isDemoPack
-      ? `WebLab Demo Pack · ${registry.stats.blockCount} blocos`
+      ? `WebLab Texture Pack · ${registry.stats.blockCount} blocos`
       : `Bedrock resource pack · ${registry.stats.blockCount} blocos`;
     $("asset-label").textContent = `${atlas.loadedTextures} texturas carregadas${atlas.overriddenTextures ? ` · ${atlas.overriddenTextures} overrides 512px` : ""}${atlas.failedTextures ? ` · ${atlas.failedTextures} falhas` : ""}`;
     $("engine-label").textContent = `WebGL 2 · atlas ${atlas.width}×${atlas.height} · limite GPU ${gpuLimit}`;
     updateWorldMetrics();
     $("pack-info").textContent = isDemoPack
-      ? "Pacote de teste gerado pelo WebLab. Não contém arquivos originais do Minecraft."
+      ? "Pacote de teste com texturas importadas do arquivo fornecido pelo usuário."
       : pack.index.source?.game_version
         ? `Recursos detectados: Minecraft Bedrock ${pack.index.source.game_version}`
         : "Recursos carregados de um pacote Bedrock local";
@@ -260,7 +260,7 @@ async function authenticatePrivatePack() {
 
     setStatus("Nenhum pacote Bedrock está hospedado ainda. Iniciando mundo procedural de demonstração…");
     await queueEngineStart(await createDemoBedrockPack());
-    setStatus("Mundo procedural ativo. Nenhum arquivo precisa ser enviado pelo aparelho.", "success");
+    setStatus("Mundo procedural ativo com texturas do pacote de teste. Nenhum arquivo precisa ser enviado pelo aparelho.", "success");
   } catch (error) { showError(error); }
 })();
 
