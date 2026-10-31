@@ -84,22 +84,26 @@ function sampleTerrain(x, z, seed, maxHeight, seaLevel) {
 
 function resolveBlocks(registry) {
   const get = (fallback, ...names) => registry.resolveBlock(...names) || fallback;
+  const stone = get(1, "stone", "cobblestone");
+  const grass = get(2, "grass", "grass_block");
+  const dirt = get(3, "dirt");
+  const sand = get(dirt, "sand");
   return {
-    stone: get(1, "stone"),
-    grass: get(2, "grass", "grass_block"),
-    dirt: get(3, "dirt"),
-    bedrock: get(1, "bedrock"),
+    stone,
+    grass,
+    dirt,
+    bedrock: get(stone, "bedrock"),
     log: get(0, "log", "oak_log", "wood"),
     leaves: get(0, "leaves", "oak_leaves", "leaves_oak"),
-    sand: get(3, "sand"),
-    sandstone: get(1, "sandstone"),
-    gravel: get(3, "gravel"),
+    sand,
+    sandstone: get(stone, "sandstone"),
+    gravel: get(sand, "gravel"),
     water: get(0, "water", "flowing_water"),
-    snow: get(2, "snow", "snow_layer"),
-    coal: get(1, "coal_ore"),
-    iron: get(1, "iron_ore"),
-    gold: get(1, "gold_ore"),
-    diamond: get(1, "diamond_ore")
+    snow: get(grass, "snow", "snow_layer"),
+    coal: get(stone, "coal_ore"),
+    iron: get(stone, "iron_ore"),
+    gold: get(stone, "gold_ore"),
+    diamond: get(stone, "diamond_ore")
   };
 }
 
