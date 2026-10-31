@@ -220,8 +220,17 @@ async function authenticatePrivatePack() {
     const gl = canvas.getContext("webgl2", { antialias: false, powerPreference: "high-performance" });
     if (!gl) throw new Error("WebGL 2 não foi detectado neste navegador.");
     $("gpu-info").textContent = gl.getParameter(gl.RENDERER) || "GPU WebGL2";
-    setStatus("Verificando acesso ao pacote Bedrock privado…");
-    const privateAuthorized = await authenticatePrivatePack();
+    setStatus("Verificando se há um pacote Bedrock privado hospedado…");
+    const packStatusResponse = await fetch("/api/bedrock-assets?status=1", {
+      credentials: "same-origin",
+      cache: "no-store"
+    });
+    const packStatus = packStatusResponse.ok
+      ? await packStatusResponse.json()
+      : { available: false };
+    const privateAuthorized = packStatus.available
+      ? await authenticatePrivatePack()
+      : false;
     const privateResponse = privateAuthorized
       ? await fetch("/api/bedrock-assets", {
           credentials: "same-origin",
