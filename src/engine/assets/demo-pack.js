@@ -38,7 +38,10 @@ function makeTexture(alias) {
       if (alias === "grass_side" && y < 3) paletteIndex = hash(x, y, 7) % 2 ? 0 : 1;
       if (alias === "log" && x > 5 && x < 10) paletteIndex = 1;
       if (alias === "leaves" && hash(x, y, 13) % 7 === 0) paletteIndex = 3;
-      if (alias === "water") paletteIndex = (y + Math.floor(Math.sin(x * 0.8) * 2) + hash(x, y, 17) % 2) % colors.length;
+      if (alias === "water") {
+        const waveIndex = y + Math.floor(Math.sin(x * 0.8) * 2) + hash(x, y, 17) % 2;
+        paletteIndex = ((waveIndex % colors.length) + colors.length) % colors.length;
+      }
       if (alias.endsWith("_ore")) paletteIndex = hash(x, y, 31) % 6 === 0 ? 2 : hash(x, y, 19) % 3;
 
       const hex = colors[paletteIndex].slice(1);
