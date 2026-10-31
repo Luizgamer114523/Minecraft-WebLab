@@ -120,5 +120,9 @@ function emitQuad(
     blockIds.push(blockId);
     materialIds.push(materialId);
   }
-  uvs.push(0, 0, width, 0, width, height, 0, 0, width, height, 0, height);
+  if (reverse) {
+    uvs.push(0, 0, 0, height, width, height, 0, 0, width, height, width, 0);
+  } else {
+    uvs.push(0, 0, width, 0, width, height, 0, 0, width, height, 0, height);
+  }
 }

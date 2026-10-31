@@ -46,6 +46,25 @@ function parseBlockFaces(definition) {
   return faces;
 }
 
+async function readBoundedBlob(stream, maximumBytes, fileName) {
+  const reader = stream.getReader();
+  const chunks = [];
+  let total = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      total += value.byteLength;
+      if (total > maximumBytes) {
+        await reader.cancel();
+        throw new Error('ZIP recusado: descompactação excede o limite para ' + fileName + '.');
+      }
+      chunks.push(value);
+    }
+  } finally { reader.releaseLock(); }
+  return new Blob(chunks);
+}
+
 async function expandZipArchive(zipFile) {
   const data = new Uint8Array(await zipFile.arrayBuffer());
   const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
@@ -54,54 +73,50 @@ async function expandZipArchive(zipFile) {
   for (let cursor = data.length - 22; cursor >= minimum; cursor--) {
     if (view.getUint32(cursor, true) === 0x06054b50) { endOffset = cursor; break; }
   }
-  if (endOffset < 0) throw new Error("ZIP inválido: diretório central não encontrado.");
+  if (endOffset < 0) throw new Error('ZIP inválido: diretório central não encontrado.');
   const entryCount = view.getUint16(endOffset + 10, true);
   const centralOffset = view.getUint32(endOffset + 16, true);
-  if (entryCount > 10000) throw new Error("ZIP recusado: mais de 10.000 arquivos.");
+  if (entryCount > 10000) throw new Error('ZIP recusado: mais de 10.000 arquivos.');
   const output = [];
   let cursor = centralOffset, totalExpanded = 0;
+  const maxFileBytes = 24 * 1024 * 1024, maxTotalBytes = 180 * 1024 * 1024;
   for (let entry = 0; entry < entryCount; entry++) {
-    if (view.getUint32(cursor, true) !== 0x02014b50) throw new Error("ZIP inválido: entrada central corrompida.");
-    const flags = view.getUint16(cursor + 8, true);
-    const method = view.getUint16(cursor + 10, true);
-    const compressedSize = view.getUint32(cursor + 20, true);
-    const expandedSize = view.getUint32(cursor + 24, true);
-    const nameLength = view.getUint16(cursor + 28, true);
-    const extraLength = view.getUint16(cursor + 30, true);
-    const commentLength = view.getUint16(cursor + 32, true);
+    if (view.getUint32(cursor, true) !== 0x02014b50) throw new Error('ZIP inválido: entrada central corrompida.');
+    const flags = view.getUint16(cursor + 8, true), method = view.getUint16(cursor + 10, true);
+    const compressedSize = view.getUint32(cursor + 20, true), expandedSize = view.getUint32(cursor + 24, true);
+    const nameLength = view.getUint16(cursor + 28, true), extraLength = view.getUint16(cursor + 30, true), commentLength = view.getUint16(cursor + 32, true);
     const localOffset = view.getUint32(cursor + 42, true);
     const name = new TextDecoder().decode(data.subarray(cursor + 46, cursor + 46 + nameLength));
     cursor += 46 + nameLength + extraLength + commentLength;
-    if (name.startsWith("/") || /^[A-Za-z]:/.test(name) || name.split(/[\\/]/).includes("..")) {
-      throw new Error("ZIP recusado: caminho interno inseguro.");
-    }
+    if (name.startsWith('/') || /^[A-Za-z]:/.test(name) || name.split(/[\\/]/).includes('..')) throw new Error('ZIP recusado: caminho interno inseguro.');
     const safeName = normalizePath(name);
-    if (!safeName || safeName.endsWith("/")) continue;
-    if ((flags & 1) !== 0) throw new Error(`ZIP protegido por senha não é suportado: ${safeName}`);
-    if (expandedSize > 24 * 1024 * 1024) throw new Error(`Arquivo muito grande dentro do ZIP: ${safeName}`);
-    totalExpanded += expandedSize;
-    if (totalExpanded > 180 * 1024 * 1024) throw new Error("ZIP excede o limite de 180 MiB descompactados.");
-    if (![0, 8].includes(method)) throw new Error(`Método de compactação ZIP não suportado (${method}): ${safeName}`);
-    if (view.getUint32(localOffset, true) !== 0x04034b50) throw new Error(`Cabeçalho local inválido: ${safeName}`);
-    const localNameLength = view.getUint16(localOffset + 26, true);
-    const localExtraLength = view.getUint16(localOffset + 28, true);
+    if (!safeName || safeName.endsWith('/')) continue;
+    if ((flags & 1) !== 0) throw new Error('ZIP protegido por senha não é suportado: ' + safeName);
+    if (expandedSize > maxFileBytes) throw new Error('Arquivo muito grande dentro do ZIP: ' + safeName);
+    if (expandedSize > maxTotalBytes - totalExpanded) throw new Error('ZIP excede o limite de 180 MiB descompactados.');
+    if (![0, 8].includes(method)) throw new Error('Método de compactação ZIP não suportado (' + method + '): ' + safeName);
+    if (view.getUint32(localOffset, true) !== 0x04034b50) throw new Error('Cabeçalho local inválido: ' + safeName);
+    const localNameLength = view.getUint16(localOffset + 26, true), localExtraLength = view.getUint16(localOffset + 28, true);
     const payloadStart = localOffset + 30 + localNameLength + localExtraLength;
     const compressed = data.subarray(payloadStart, payloadStart + compressedSize);
     let blob;
-    if (method === 0) blob = new Blob([compressed]);
-    else {
-      if (typeof DecompressionStream !== "function") throw new Error("Este navegador não oferece descompactação ZIP por DEFLATE.");
-      const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
-      blob = await new Response(stream).blob();
+    if (method === 0) {
+      if (compressed.byteLength > maxFileBytes) throw new Error('Arquivo ZIP grande demais: ' + safeName);
+      blob = new Blob([compressed]);
+    } else {
+      if (typeof DecompressionStream !== 'function') throw new Error('Este navegador não oferece descompactação ZIP por DEFLATE.');
+      const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+      blob = await readBoundedBlob(stream, Math.min(maxFileBytes, maxTotalBytes - totalExpanded), safeName);
     }
-    if (blob.size !== expandedSize) throw new Error(`Tamanho descompactado inesperado: ${safeName}`);
-    const file = new File([blob], safeName.split("/").pop(), { type: "application/octet-stream" });
-    Object.defineProperty(file, "webkitRelativePath", { value: safeName });
+    if (blob.size !== expandedSize) throw new Error('Tamanho descompactado inesperado: ' + safeName);
+    if (blob.size > maxTotalBytes - totalExpanded) throw new Error('ZIP excede o limite de 180 MiB descompactados.');
+    totalExpanded += blob.size;
+    const file = new File([blob], safeName.split('/').pop(), { type: 'application/octet-stream' });
+    Object.defineProperty(file, 'webkitRelativePath', { value: safeName });
     output.push(file);
   }
   return output;
 }
-
 function makeFileIndex(files) {
   return [...files].map((file) => ({ file, path: normalizePath(file.webkitRelativePath || file.name) }));
 }
