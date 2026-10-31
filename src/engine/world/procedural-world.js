@@ -238,6 +238,9 @@ export function createProceduralWorld(registry, options = {}) {
         chunk.z * CHUNK_SIZE + localZ
       );
     },
+    getSurfaceAtWorld(x, z) {
+      return sampleTerrain(x, z, world.seed, world.height - 8, world.seaLevel);
+    },
     getBiomeAtWorld(x, z) {
       return sampleTerrain(x, z, world.seed, world.height - 8, world.seaLevel).biome;
     }
