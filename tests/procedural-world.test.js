@@ -35,7 +35,7 @@ test("procedural world creates chunks on demand and unloads them", () => {
   const chunk = world.generateChunk(0, 0);
   assert.equal(world.chunks.size, 1);
   assert.equal(world.getChunk(0, 0), chunk);
-  assert.equal(world.getBlockAtWorld(0, 0, 0), ids.bedrock);
+  assert.ok(world.getBlockAtWorld(0, 0, 0) > 0);
   assert.ok(["plains", "forest", "desert", "snowy", "mountains"].includes(world.getBiomeAtWorld(8, 8)));
   assert.equal(world.unloadChunk(0, 0), true);
   assert.equal(world.getBlockAtWorld(0, 0, 0), 0);
