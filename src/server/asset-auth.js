@@ -44,6 +44,6 @@ export function hasAssetSession(request) {
   if (separator < 1) return false;
   const expiry = value.slice(0, separator);
   const signature = value.slice(separator + 1);
-  if (!/^\\d{10}$/.test(expiry) || Number(expiry) <= Math.floor(Date.now() / 1000)) return false;
+  if (!/^\d{10}$/.test(expiry) || Number(expiry) <= Math.floor(Date.now() / 1000)) return false;
   return safeEqual(signature, signExpiry(expiry, secret));
 }

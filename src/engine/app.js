@@ -177,7 +177,7 @@ archiveInput.addEventListener("change", async () => {
   const archive = archiveInput.files?.[0];
   if (!archive) return;
   try {
-    if (!/\\.zip$/i.test(archive.name)) throw new Error("Selecione o arquivo ZIP preparado do WebLab.");
+    if (!/\.zip$/i.test(archive.name)) throw new Error("Selecione o arquivo ZIP preparado do WebLab.");
     setStatus("Autenticando o armazenamento privado…");
     await ensurePrivateAssetSession();
     setStatus("Enviando o pacote uma única vez para a Vercel Blob privada…");
