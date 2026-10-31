@@ -9,6 +9,16 @@ const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
 export const config = { api: { bodyParser: false } };
 
 export default async function handler(request, response) {
+  if (request.method === "GET" && request.query?.status === "1") {
+    try {
+      const result = await get(ASSET_PATH, { access: "private" });
+      return response.status(200).json({ available: Boolean(result) });
+    } catch (error) {
+      console.error("Private Bedrock Blob status failed:", error);
+      return response.status(200).json({ available: false });
+    }
+  }
+
   if (!hasAssetSession(request)) {
     return response.status(401).json({ error: "Authentication required." });
   }
