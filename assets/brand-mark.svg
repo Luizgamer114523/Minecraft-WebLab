@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Minecraft WebLab brand mark">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#171522"/><stop offset="1" stop-color="#242039"/></linearGradient><radialGradient id="glow"><stop stop-color="#B86BE0" stop-opacity=".22"/><stop offset="1" stop-color="#B86BE0" stop-opacity="0"/></radialGradient></defs>
+<rect width="512" height="512" rx="92" fill="url(#bg)"/><circle cx="256" cy="236" r="210" fill="url(#glow)"/>
+<rect x="18" y="18" width="476" height="476" rx="78" fill="none" stroke="#B86BE0" stroke-opacity=".32" stroke-width="3"/>
+<path d='M256 70 420 164v188l-164 94-164-94V164z' fill='none' stroke='#B86BE0' stroke-width='18' stroke-linejoin='round'/><path d='m92 164 164 96 164-96M256 260v186M174 117l164 96' fill='none' stroke='#B86BE0' stroke-width='15' stroke-linejoin='round'/><path d='M145 214h70v70h-70zM285 302h70v70h-70z' fill='#B86BE0' opacity='.8'/>
+<path d="M90 456h332" stroke="#B86BE0" stroke-opacity=".45" stroke-width="3"/>
+<text x="256" y="478" text-anchor="middle" fill="#E8E4F0" font-family="Arial,sans-serif" font-size="17" letter-spacing="3">BEDROCK ASSETS · WEBGL 2</text>
+</svg>
