@@ -35,7 +35,7 @@ export function createAssetSessionCookie() {
 export function hasAssetSession(request) {
   const secret = getSecret();
   if (!secret) return false;
-  const cookieHeader = request.headers.get("cookie") || "";
+  const cookieHeader = request.headers?.get ? request.headers.get("cookie") || "" : request.headers?.cookie || "";
   const entry = cookieHeader.split(";").map((part) => part.trim())
     .find((part) => part.startsWith(COOKIE_NAME + "="));
   if (!entry) return false;
