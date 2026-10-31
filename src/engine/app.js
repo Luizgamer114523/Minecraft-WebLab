@@ -1,4 +1,5 @@
 import { loadHostedBedrockPack, loadBedrockPackFromFiles, loadTextureOverridesFromZip } from "./assets/bedrock-pack-loader.js";
+import { createDemoBedrockPack } from "./assets/demo-pack.js";
 import { loadLocalPackArchive, saveLocalPackArchive } from "./assets/local-pack-cache.js";
 import { FirstPersonController } from "./input/first-person-controller.js";
 import { buildTextureAtlas } from "./render/texture-atlas.js";
@@ -73,13 +74,18 @@ async function startEngine(pack) {
     engineStarted = true;
     loading.classList.add("hidden");
     hud.hidden = false;
-    $("world-label").textContent = `Bedrock resource pack · ${registry.stats.blockCount} blocos`;
+    const isDemoPack = pack.index.schema === "minecraft-weblab/demo-resource-index@1";
+    $("world-label").textContent = isDemoPack
+      ? `WebLab Demo Pack · ${registry.stats.blockCount} blocos`
+      : `Bedrock resource pack · ${registry.stats.blockCount} blocos`;
     $("asset-label").textContent = `${atlas.loadedTextures} texturas carregadas${atlas.overriddenTextures ? ` · ${atlas.overriddenTextures} overrides 512px` : ""}${atlas.failedTextures ? ` · ${atlas.failedTextures} falhas` : ""}`;
     $("engine-label").textContent = `WebGL 2 · atlas ${atlas.width}×${atlas.height} · limite GPU ${gpuLimit}`;
     $("mesh-label").textContent = `${world.chunks.length} chunks · ${totalQuads.toLocaleString("pt-BR")} faces após greedy meshing`;
-    $("pack-info").textContent = pack.index.source?.game_version
-      ? `Recursos detectados: Minecraft Bedrock ${pack.index.source.game_version}`
-      : "Recursos carregados de um pacote Bedrock local";
+    $("pack-info").textContent = isDemoPack
+      ? "Pacote de teste gerado pelo WebLab. Não contém arquivos originais do Minecraft."
+      : pack.index.source?.game_version
+        ? `Recursos detectados: Minecraft Bedrock ${pack.index.source.game_version}`
+        : "Recursos carregados de um pacote Bedrock local";
     const missingRefs = pack.index.stats?.unresolved_texture_references;
     $("quality-note").textContent = `${atlas.failedTextures} textura(s) não decodificada(s) · ${missingRefs ?? "n/d"} referência(s) pendente(s) no índice.`;
     setStatus("Motor iniciado com recursos locais.", "success");
@@ -230,7 +236,14 @@ $("back-home").addEventListener("click", () => { window.location.href = "/"; });
       }
     }
     const hostedPack = await loadHostedBedrockPack();
-    if (hostedPack) await queueEngineStart(hostedPack);
+    if (hostedPack) {
+      await queueEngineStart(hostedPack);
+      return;
+    }
+
+    setStatus("Nenhum pacote privado foi configurado. Iniciando modo de demonstração leve…");
+    await queueEngineStart(await createDemoBedrockPack());
+    setStatus("Modo de demonstração ativo. O teste funciona sem importar arquivos no celular.", "success");
   } catch (error) { showError(error); }
 })();
 
