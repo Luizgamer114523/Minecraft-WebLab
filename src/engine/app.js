@@ -1,4 +1,5 @@
 import { loadHostedBedrockPack, loadBedrockPackFromFiles, loadTextureOverridesFromZip } from "./assets/bedrock-pack-loader.js";
+import { loadLocalPackArchive, saveLocalPackArchive } from "./assets/local-pack-cache.js";
 import { FirstPersonController } from "./input/first-person-controller.js";
 import { buildTextureAtlas } from "./render/texture-atlas.js";
 import { WebGL2Renderer } from "./render/webgl2-renderer.js";
@@ -130,10 +131,18 @@ overrideInput.addEventListener("change", async () => {
   } catch (error) { showError(error); }
 });
 archiveInput.addEventListener("change", async () => {
-  if (!archiveInput.files?.length) return;
+  const archive = archiveInput.files?.[0];
+  if (!archive) return;
   try {
     setStatus("Lendo e descompactando ZIP local…");
-    await startEngine(await loadBedrockPackFromFiles(archiveInput.files));
+    await startEngine(await loadBedrockPackFromFiles([archive]));
+    try {
+      await saveLocalPackArchive(archive);
+      setStatus("Pacote carregado e salvo neste navegador. Ele abrirá automaticamente nas próximas visitas.", "success");
+    } catch (storageError) {
+      console.warn("O pacote foi carregado, mas não pôde ser salvo localmente:", storageError);
+      setStatus("Pacote carregado. O navegador não permitiu salvá-lo para a próxima visita.", "success");
+    }
   } catch (error) { showError(error); }
 });
 $("back-home").addEventListener("click", () => { window.location.href = "/"; });
@@ -143,6 +152,21 @@ $("back-home").addEventListener("click", () => { window.location.href = "/"; });
     const gl = canvas.getContext("webgl2", { antialias: false, powerPreference: "high-performance" });
     if (!gl) throw new Error("WebGL 2 não foi detectado neste navegador.");
     $("gpu-info").textContent = gl.getParameter(gl.RENDERER) || "GPU WebGL2";
+    setStatus("Procurando pacote Bedrock salvo neste navegador…");
+    const savedArchive = await loadLocalPackArchive().catch((error) => {
+      console.warn("Não foi possível consultar o pacote local salvo:", error);
+      return null;
+    });
+    if (savedArchive) {
+      try {
+        await startEngine(await loadBedrockPackFromFiles([savedArchive]));
+        setStatus("Pacote Bedrock local restaurado automaticamente.", "success");
+        return;
+      } catch (error) {
+        console.warn("O pacote salvo não pôde ser restaurado:", error);
+        showError(error);
+      }
+    }
     setStatus("Aguardando pacote Bedrock local.");
     const hostedPack = await loadHostedBedrockPack();
     if (hostedPack) await startEngine(hostedPack);
