@@ -146,7 +146,9 @@ export class WebGL2Renderer {
   }
 
   addChunk(mesh, chunkX, chunkZ, atlasRects) {
+    this.removeChunk(chunkX, chunkZ);
     const gl = this.gl, vertexCount = mesh.vertexCount, stride = 12;
+    if (!vertexCount) return false;
     const interleaved = new Float32Array(vertexCount * stride);
     for (let vertex = 0; vertex < vertexCount; vertex++) {
       const p = vertex * 3, uv = vertex * 2, out = vertex * stride;
@@ -175,7 +177,17 @@ export class WebGL2Renderer {
     gl.enableVertexAttribArray(3); gl.vertexAttribPointer(3, 4, gl.FLOAT, false, strideBytes, 32);
     gl.bindVertexArray(null);
     gl.bindBuffer(gl.ARRAY_BUFFER, null);
-    this.chunks.push({ vao, buffer, vertexCount, quadCount: mesh.quadCount, offset: [chunkX * 16, 0, chunkZ * 16] });
+    this.chunks.push({ chunkX, chunkZ, vao, buffer, vertexCount, quadCount: mesh.quadCount, offset: [chunkX * 16, 0, chunkZ * 16] });
+    return true;
+  }
+
+  removeChunk(chunkX, chunkZ) {
+    const index = this.chunks.findIndex((chunk) => chunk.chunkX === chunkX && chunk.chunkZ === chunkZ);
+    if (index < 0) return false;
+    const [chunk] = this.chunks.splice(index, 1);
+    this.gl.deleteBuffer(chunk.buffer);
+    this.gl.deleteVertexArray(chunk.vao);
+    return true;
   }
 
   render(camera) {
