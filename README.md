@@ -10,7 +10,7 @@ Preservar o jogo original enviado para análise. Este projeto **não** deve apre
 
 O APK enviado contém um motor nativo ARM64 (`libminecraftpe.so`) e dependências do Android, incluindo EGL/OpenGL ES e bibliotecas de áudio/rede. O navegador não executa APKs ou bibliotecas ELF Android diretamente.
 
-O diagnóstico detalhado está em [docs/ANALISE-APK-26.60.md](docs/ANALISE-APK-26.60.md).
+O diagnóstico detalhado está em [docs/ANALISE-APK-26.60.md](docs/ANALISE-APK-26.60.md). O mapeamento das interfaces Android e suas alternativas web está em [docs/MAPEAMENTO-COMPATIBILIDADE-WEB.md](docs/MAPEAMENTO-COMPATIBILIDADE-WEB.md).
 
 ## Caminhos avaliados
 
@@ -27,4 +27,4 @@ O diagnóstico detalhado está em [docs/ANALISE-APK-26.60.md](docs/ANALISE-APK-2
 
 ## Status
 
-Análise estática inicial do APK 1.26.60 concluída. A execução original em navegador ainda não está implementada.
+Análise estática do APK e primeiro mapeamento de compatibilidade Android→Web concluídos. A execução original em navegador ainda não está implementada.
