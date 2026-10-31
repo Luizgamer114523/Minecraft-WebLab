@@ -1,40 +1,55 @@
 # Minecraft WebLab
 
-Estudo técnico para preservar e investigar o Minecraft Bedrock Android 1.26.60 em uma experiência acessível pelo navegador, priorizando o reaproveitamento dos arquivos originais fornecidos pelo usuário.
+Laboratório de renderização 3D para navegador que reaproveita definições e recursos locais do Minecraft Bedrock Android 1.26.60 fornecidos pelo usuário.
 
-## Objetivo
+## Abrir o motor
 
-Não criar um clone simplificado e apresentá-lo como conversão do Minecraft. A meta é aproveitar definições, texturas, materiais, shaders e demais dados originais. A página inicial continua sendo o diagnóstico de compatibilidade do navegador.
-
-## Recursos Bedrock originais
-
-A extração fornecida contém o pacote vanilla e o overlay vanilla_1.26.50, com definições de blocos, mapa de texturas, imagens PNG/TGA, biomas, materiais e contêineres BRArchive. O importador local está em tools/bedrock/prepare-web-assets.mjs.
-
-Consulte docs/REUTILIZACAO-RECURSOS-BEDROCK.md para formato BRArchive, estatísticas verificadas, exemplo de mapeamento por face e instruções de importação.
-
-Para preparar os arquivos localmente, depois de extrair o 7z:
+Depois de instalar as dependências:
 
     npm install
-    npm run prepare:bedrock-assets -- --input "/caminho/para/tudo do Minecraft/assets/assets/resource_packs" --output public/bedrock-assets
+    npm run dev
 
-Resultado verificado com os arquivos fornecidos: 108 contêineres BRArchive, 4.811 membros expandidos, 461 definições de blocos, 560 chaves de textura, 1.289 referências resolvidas e nenhuma referência pendente.
+Abra \`/engine/\` no endereço local do Vite. Para compilar as duas páginas:
 
-Os recursos extraídos ficam locais. A pasta public/bedrock-assets/ e os arquivos proprietários são ignorados pelo Git. O repositório público contém apenas o importador e a documentação, não o APK, bibliotecas ou recursos comerciais.
+    npm run build
 
-## Limite técnico do APK
+A página inicial continua sendo o diagnóstico de compatibilidade. O motor experimental fica em \`engine/\`.
 
-O APK enviado contém um motor nativo ARM64 em lib/arm64-v8a/libminecraftpe.so e depende de Android, JNI, EGL/OpenGL ES, áudio e outros componentes. O Chrome não executa APKs ou bibliotecas ELF Android diretamente. Emscripten não converte um ELF Android já compilado em um port WASM funcional.
+## Recursos Bedrock
 
-Há duas rotas para preservar o jogo original: obter uma build web autorizada/código-fonte e pipeline de compilação do motor, ou executar o APK num host Android compatível e transmitir imagem, áudio e controles para o navegador. Reimplementar um renderer/gameplay web com os dados Bedrock é outra categoria de projeto e não equivale a executar o Minecraft original.
+A extração fornecida contém o pacote vanilla e o overlay \`vanilla_1.26.50\`, com definições de blocos, mapas de textura, imagens PNG/TGA, materiais e contêineres BRArchive.
 
-## Diagnóstico do navegador
+Para preparar o índice e os arquivos localmente:
 
-O probe da página inicial verifica WebGL 2, WebGPU, Web Audio, IndexedDB, toque, Gamepad, Workers/SharedArrayBuffer e APIs de rede localmente, sem telemetria. Consulte docs/WEB-PLATFORM-PROBE.md e docs/MAPEAMENTO-COMPATIBILIDADE-WEB.md.
+    npm run prepare:bedrock-assets -- --input "/caminho/para/resource_packs" --output public/bedrock-assets
 
-## Estado atual
+No motor, selecione a pasta \`public/bedrock-assets\` ou compacte o seu conteúdo em ZIP e carregue-o no navegador. Também é possível selecionar uma pasta de Resource Pack com \`blocks.json\` e \`textures/terrain_texture.json\`. O ZIP opcional de texturas 512px pode ser aplicado depois da inicialização pelo botão \`512px\`.
 
-- Análise estática do APK: concluída.
-- Diagnóstico de capacidades do Chrome: implementado.
-- Extração/indexação local dos recursos vanilla + overlay: testada.
-- Execução do motor original no Chrome: ainda não implementada; depende de uma via autorizada de build web ou de streaming Android.
-- Nenhum clone voxel genérico será tratado como conversão do Bedrock.
+Os recursos permanecem locais no aparelho do usuário. \`public/bedrock-assets/\`, APKs, bibliotecas e pacotes comerciais são ignorados pelo Git. Não envie esses arquivos ao repositório público.
+
+## Engine Core v0.1
+
+- WebGL 2 com shaders GLSL ES 3.00, depth test e back-face culling.
+- Chunks compactos 16×16×altura em typed arrays.
+- Greedy meshing com remoção de faces internas e separação de materiais por face.
+- Atlas de texturas local com PNG, JPEG, WebP e TGA (inclui TGA RLE).
+- IDs de bloco e material resolvidos a partir de \`bedrock-resource-index.json\`.
+- Cena de validação procedural com relevo, camadas e árvores usando aliases do pacote carregado.
+- Câmera livre com WASD/mouse e joystick/olhar por toque em dispositivos móveis.
+
+Validação de código: \`npm test\` executa cinco testes para storage, winding, greedy merge, costuras de chunks e materiais por face. A compilação e a validação visual com GPU real ainda precisam ser confirmadas no ambiente de deploy e no Chrome Android.
+
+## Limites
+
+Este projeto **não executa o APK original** e não é uma conversão oficial do motor Bedrock. O renderer web interpreta parte dos dados dos Resource Packs em um runtime independente. \`blocks.json\` e \`terrain_texture.json\` não descrevem todas as regras do jogo.
+
+Ainda faltam física e colisão, raycast, quebrar/colocar blocos, seleção, iluminação/ambient occlusion, tintas de bioma, transparência correta, água, modelos Bedrock especiais, entidades, animações, inventário, salvamento e multiplayer.
+
+## Análise do APK e arquitetura
+
+Consulte:
+
+- \`docs/ANALISE-APK-26.60.md\`
+- \`docs/REUTILIZACAO-RECURSOS-BEDROCK.md\`
+- \`docs/ENGINE-CORE-v0.1.md\`
+- \`docs/ENGINE-ROADMAP.md\`
