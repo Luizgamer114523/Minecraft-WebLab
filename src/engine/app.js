@@ -190,17 +190,45 @@ async function startEngine(pack) {
 
 $("back-home").addEventListener("click", () => { window.location.href = "/"; });
 
+async function authenticatePrivatePack() {
+  const check = await fetch("/api/bedrock-auth", {
+    credentials: "same-origin",
+    cache: "no-store"
+  });
+  if (!check.ok) throw new Error(`Não foi possível verificar a sessão privada (HTTP ${check.status}).`);
+  const session = await check.json();
+  if (session.authenticated) return true;
+
+  const password = window.prompt(
+    "Pacote Bedrock privado: informe a chave de acesso. Cancele para iniciar o modo de demonstração."
+  );
+  if (!password) return false;
+
+  const response = await fetch("/api/bedrock-auth", {
+    method: "POST",
+    credentials: "same-origin",
+    cache: "no-store",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password })
+  });
+  if (!response.ok) throw new Error("Chave privada incorreta ou sessão indisponível.");
+  return true;
+}
+
 (async () => {
   try {
     const gl = canvas.getContext("webgl2", { antialias: false, powerPreference: "high-performance" });
     if (!gl) throw new Error("WebGL 2 não foi detectado neste navegador.");
     $("gpu-info").textContent = gl.getParameter(gl.RENDERER) || "GPU WebGL2";
-    setStatus("Buscando o pacote Bedrock privado na Vercel…");
-    const privateResponse = await fetch("/api/bedrock-assets", {
-      credentials: "same-origin",
-      cache: "no-cache"
-    });
-    if (privateResponse.ok) {
+    setStatus("Verificando acesso ao pacote Bedrock privado…");
+    const privateAuthorized = await authenticatePrivatePack();
+    const privateResponse = privateAuthorized
+      ? await fetch("/api/bedrock-assets", {
+          credentials: "same-origin",
+          cache: "no-cache"
+        })
+      : null;
+    if (privateResponse?.ok) {
       const privateArchive = await privateResponse.blob();
       const privateFile = new File([privateArchive], "bedrock-assets-prepared.zip", {
         type: "application/zip",
@@ -210,7 +238,7 @@ $("back-home").addEventListener("click", () => { window.location.href = "/"; });
       setStatus("Pacote Bedrock privado carregado automaticamente da Vercel.", "success");
       return;
     }
-    if (![401, 404].includes(privateResponse.status)) {
+    if (privateResponse && ![401, 404].includes(privateResponse.status)) {
       throw new Error("A Vercel não conseguiu entregar o pacote privado (HTTP " + privateResponse.status + ").");
     }
 
