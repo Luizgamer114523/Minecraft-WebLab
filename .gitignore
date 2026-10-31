@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.vercel/
+.env
+.env.*
+!.env.example
+
+# Local copies/imports of Minecraft resources. Never push these to the public repo.
+public/bedrock-assets/
+.bedrock-source/
+minecraft-extracted/
+*.apk
+*.aab
+*.mcworld
+*.mcpack
+*.brarchive
+*.7z
