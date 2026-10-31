@@ -103,17 +103,18 @@ function packShelves(items, maxSize, padding) {
 
 export async function buildTextureAtlas(pack, registry, gl, { maxTextureEdge = 128, padding = 2 } = {}) {
   const maxSize = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE) || 2048, 4096);
-  const sources = new Map(), sourceByMaterial = new Map();
+  const sources = new Map(), sourceByMaterial = new Map(), fallbackByMaterial = new Map();
   for (const material of registry.materials) {
     const override = pack.getOverrideFile?.(material.alias);
+    const baseKey = material.file ? `base:${material.file}` : null;
+    if (baseKey && !sources.has(baseKey)) sources.set(baseKey, { key: baseKey, path: material.file, blob: null });
     if (override) {
       const key = `override:${override.name}:${override.size}`;
-      sources.set(key, { key, path: override.name, blob: override });
+      if (!sources.has(key)) sources.set(key, { key, path: override.name, blob: override });
       sourceByMaterial.set(material.id, key);
-    } else if (material.file) {
-      const key = `base:${material.file}`;
-      sources.set(key, { key, path: material.file, blob: null });
-      sourceByMaterial.set(material.id, key);
+      if (baseKey) fallbackByMaterial.set(material.id, baseKey);
+    } else if (baseKey) {
+      sourceByMaterial.set(material.id, baseKey);
     }
   }
   const decoded = [], failures = [];
@@ -152,15 +153,15 @@ export async function buildTextureAtlas(pack, registry, gl, { maxTextureEdge = 1
     item.width / layout.width,
     item.height / layout.height
   ]);
-  const missingRect = rectByKey.get(missingKey) || rectByKey.get("__weblab_missing__") || [0, 0, 1, 1];
+  const missingRect = rectByKey.get(missingKey) || rectByKey.get(fallbackByMaterial.get(0)) || rectByKey.get("__weblab_missing__") || [0, 0, 1, 1];
   const rects = new Float32Array(registry.materials.length * 4);
   for (const material of registry.materials) {
-    rects.set(rectByKey.get(sourceByMaterial.get(material.id)) || missingRect, material.id * 4);
+    rects.set(rectByKey.get(sourceByMaterial.get(material.id)) || rectByKey.get(fallbackByMaterial.get(material.id)) || missingRect, material.id * 4);
   }
   return {
     canvas, rects, width: layout.width, height: layout.height,
     loadedTextures: decoded.length,
-    overriddenTextures: [...sourceByMaterial.values()].filter((key) => key.startsWith("override:")).length,
+    overriddenTextures: [...sourceByMaterial.entries()].filter(([id, key]) => key.startsWith("override:") && rectByKey.has(key)).length,
     failedTextures: failures.length, failures
   };
 }
