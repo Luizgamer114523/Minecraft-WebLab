@@ -6,6 +6,10 @@ Estudo de compatibilidade para executar a versão Android Minecraft Bedrock 1.26
 
 Preservar o jogo original enviado para análise. Este projeto **não** deve apresentar um jogo voxel simplificado como se fosse uma conversão do Minecraft.
 
+## Diagnóstico web
+
+A página inicial agora é o Web Platform Probe mobile-first. Ela testa WebGL 2, WebGPU, Web Audio, IndexedDB, toque, Gamepad, Workers/SharedArrayBuffer e APIs de rede diretamente no navegador, sem telemetria. O relatório técnico está em [docs/WEB-PLATFORM-PROBE.md](docs/WEB-PLATFORM-PROBE.md).
+
 ## Situação técnica
 
 O APK enviado contém um motor nativo ARM64 (`libminecraftpe.so`) e dependências do Android, incluindo EGL/OpenGL ES e bibliotecas de áudio/rede. O navegador não executa APKs ou bibliotecas ELF Android diretamente.
@@ -27,4 +31,4 @@ O diagnóstico detalhado está em [docs/ANALISE-APK-26.60.md](docs/ANALISE-APK-2
 
 ## Status
 
-Análise estática do APK e primeiro mapeamento de compatibilidade Android→Web concluídos. A execução original em navegador ainda não está implementada.
+Análise estática do APK, mapeamento Android→Web e primeiro diagnóstico de capacidades do navegador implementados. A execução original em navegador ainda não está implementada.
