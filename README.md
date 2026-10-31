@@ -1,3 +1,13 @@
+<div align="center">
+
+<img src="./assets/brand-mark.svg" width="132" alt="Minecraft WebLab brand mark" />
+
+**EXPERIMENTAL WEBGL 2 RENDERER**
+
+</div>
+
+---
+
 # Minecraft WebLab
 
 **An experimental browser-based 3D renderer for selected Minecraft Bedrock resource-pack assets.**
