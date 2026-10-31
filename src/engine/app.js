@@ -137,19 +137,55 @@ overrideInput.addEventListener("change", async () => {
     }
   } catch (error) { showError(error); }
 });
+async function ensurePrivateAssetSession() {
+  const current = await fetch("/api/bedrock-auth", { credentials: "same-origin", cache: "no-store" });
+  if (current.ok) {
+    const state = await current.json();
+    if (state.authenticated) return;
+  }
+
+  const password = window.prompt("Configuração única do WebLab: cole a chave privada fornecida nesta conversa.");
+  if (!password) throw new Error("Configuração cancelada. O pacote privado não foi alterado.");
+
+  const login = await fetch("/api/bedrock-auth", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ password })
+  });
+  if (!login.ok) throw new Error(login.status === 401
+    ? "Chave privada incorreta. Confira a chave e tente novamente."
+    : "Não foi possível autenticar no armazenamento privado.");
+}
+
+async function uploadPrivateBedrockPack(archive) {
+  const form = new FormData();
+  form.append("file", archive, "bedrock-assets-prepared.zip");
+  const response = await fetch("/api/bedrock-assets", {
+    method: "POST",
+    credentials: "same-origin",
+    body: form
+  });
+  if (!response.ok) {
+    const detail = await response.json().catch(() => ({}));
+    throw new Error(detail.error || "Não foi possível guardar o pacote na Vercel Blob privada.");
+  }
+  return response.json();
+}
+
 archiveInput.addEventListener("change", async () => {
   const archive = archiveInput.files?.[0];
   if (!archive) return;
   try {
-    setStatus("Lendo e descompactando ZIP local…");
+    if (!/\\.zip$/i.test(archive.name)) throw new Error("Selecione o arquivo ZIP preparado do WebLab.");
+    setStatus("Autenticando o armazenamento privado…");
+    await ensurePrivateAssetSession();
+    setStatus("Enviando o pacote uma única vez para a Vercel Blob privada…");
+    const saved = await uploadPrivateBedrockPack(archive);
+    setStatus("Pacote privado guardado na Vercel. Preparando a primeira cena…", "success");
     await queueEngineStart(await loadBedrockPackFromFiles([archive]));
-    try {
-      await saveLocalPackArchive(archive);
-      setStatus("Pacote carregado e salvo neste navegador. Ele abrirá automaticamente nas próximas visitas.", "success");
-    } catch (storageError) {
-      console.warn("O pacote foi carregado, mas não pôde ser salvo localmente:", storageError);
-      setStatus("Pacote carregado. O navegador não permitiu salvá-lo para a próxima visita.", "success");
-    }
+    setStatus("Pacote configurado. Nas próximas visitas, ele será carregado automaticamente.", "success");
+    console.info("Private Bedrock assets stored:", saved.size, "bytes");
   } catch (error) { showError(error); }
 });
 $("back-home").addEventListener("click", () => { window.location.href = "/"; });
@@ -159,7 +195,26 @@ $("back-home").addEventListener("click", () => { window.location.href = "/"; });
     const gl = canvas.getContext("webgl2", { antialias: false, powerPreference: "high-performance" });
     if (!gl) throw new Error("WebGL 2 não foi detectado neste navegador.");
     $("gpu-info").textContent = gl.getParameter(gl.RENDERER) || "GPU WebGL2";
-    setStatus("Procurando pacote Bedrock salvo neste navegador…");
+    setStatus("Buscando o pacote Bedrock privado na Vercel…");
+    const privateResponse = await fetch("/api/bedrock-assets", {
+      credentials: "same-origin",
+      cache: "no-cache"
+    });
+    if (privateResponse.ok) {
+      const privateArchive = await privateResponse.blob();
+      const privateFile = new File([privateArchive], "bedrock-assets-prepared.zip", {
+        type: "application/zip",
+        lastModified: Date.now()
+      });
+      await queueEngineStart(await loadBedrockPackFromFiles([privateFile]));
+      setStatus("Pacote Bedrock privado carregado automaticamente da Vercel.", "success");
+      return;
+    }
+    if (![401, 404].includes(privateResponse.status)) {
+      throw new Error("A Vercel não conseguiu entregar o pacote privado (HTTP " + privateResponse.status + ").");
+    }
+
+    setStatus("Pacote privado ainda não configurado. A importação inicial será feita uma única vez.");
     const savedArchive = await loadLocalPackArchive().catch((error) => {
       console.warn("Não foi possível consultar o pacote local salvo:", error);
       return null;
@@ -167,14 +222,13 @@ $("back-home").addEventListener("click", () => { window.location.href = "/"; });
     if (savedArchive) {
       try {
         await queueEngineStart(await loadBedrockPackFromFiles([savedArchive]));
-        setStatus("Pacote Bedrock local restaurado automaticamente.", "success");
+        setStatus("Pacote local restaurado. Configure a cópia privada na Vercel para uso automático em outros aparelhos.", "success");
         return;
       } catch (error) {
         console.warn("O pacote salvo não pôde ser restaurado:", error);
         showError(error);
       }
     }
-    setStatus("Aguardando pacote Bedrock local.");
     const hostedPack = await loadHostedBedrockPack();
     if (hostedPack) await queueEngineStart(hostedPack);
   } catch (error) { showError(error); }
