@@ -1,55 +1,81 @@
 # Minecraft WebLab
 
-Laboratório de renderização 3D para navegador que reaproveita definições e recursos locais do Minecraft Bedrock Android 1.26.60 fornecidos pelo usuário.
+**An experimental browser-based 3D renderer for selected Minecraft Bedrock resource-pack assets.**
 
-## Abrir o motor
+Minecraft WebLab explores how far selected Bedrock resource data can be interpreted in an independent web runtime. It is a rendering and compatibility experiment, not a browser port of the original Minecraft engine.
 
-Depois de instalar as dependências:
+[Live preview](https://minecraft-weblab.vercel.app)
 
-    npm install
-    npm run dev
+## Project goals
 
-Abra `/engine/` no endereço local do Vite. Para compilar as duas páginas:
+- Load supported resource-pack data locally in the browser.
+- Resolve selected block definitions and texture mappings.
+- Build chunk geometry and render it through WebGL 2.
+- Test rendering and input on desktop and mobile browsers.
+- Document the compatibility gap between resource-pack data and a full game engine.
 
-    npm run build
+## Engine capabilities
 
-A página inicial continua sendo o diagnóstico de compatibilidade. O motor experimental fica em `engine/`.
+The current experimental core includes:
 
-## Recursos Bedrock
+- **WebGL 2** with GLSL ES 3.00 shaders, depth testing, and back-face culling.
+- **Chunk geometry** using compact 16×16×height typed arrays.
+- **Greedy meshing** to merge compatible faces and remove internal faces.
+- **Texture atlas** support for PNG, JPEG, WebP, and TGA, including TGA RLE.
+- **Bedrock asset indexing** for selected block and material identifiers.
+- **Procedural test world** with terrain layers and trees.
+- **First-person controls** using keyboard/mouse and mobile touch controls.
+- **Local resource loading** so resource-pack files can remain on the user's device.
 
-A extração fornecida contém o pacote vanilla e o overlay `vanilla_1.26.50`, com definições de blocos, mapas de textura, imagens PNG/TGA, materiais e contêineres BRArchive.
+## Requirements
 
-Para preparar o índice e os arquivos localmente:
+- Node.js with npm.
+- A modern browser with WebGL 2 support.
+- A Minecraft Bedrock resource-pack folder or a prepared asset bundle for meaningful custom-resource testing.
 
-    npm run prepare:bedrock-assets -- --input "/caminho/para/resource_packs" --output public/bedrock-assets
+## Run locally
 
-No motor, selecione a pasta `public/bedrock-assets` ou compacte o seu conteúdo em ZIP e carregue-o no navegador. Também é possível selecionar uma pasta de Resource Pack com `blocks.json` e `textures/terrain_texture.json`. O ZIP opcional de texturas 512px pode ser aplicado depois da inicialização pelo botão `512px`.
+Install dependencies with npm install, then start the development server with npm run dev. Open the local Vite address and select the /engine/ route.
 
-Os recursos permanecem locais no aparelho do usuário. `public/bedrock-assets/`, APKs, bibliotecas e pacotes comerciais são ignorados pelo Git. Não envie esses arquivos ao repositório público.
+Build with npm run build and run the test suite with npm test.
 
-## Engine Core v0.1
+Prepare resource assets from a local resource-pack extraction with:
 
-- WebGL 2 com shaders GLSL ES 3.00, depth test e back-face culling.
-- Chunks compactos 16×16×altura em typed arrays.
-- Greedy meshing com remoção de faces internas e separação de materiais por face.
-- Atlas de texturas local com PNG, JPEG, WebP e TGA (inclui TGA RLE).
-- IDs de bloco e material resolvidos a partir de `bedrock-resource-index.json`.
-- Cena de validação procedural com relevo, camadas e árvores usando aliases do pacote carregado.
-- Câmera livre com WASD/mouse e joystick/olhar por toque em dispositivos móveis.
+    npm run prepare:bedrock-assets -- --input "/path/to/resource_packs" --output public/bedrock-assets
 
-Validação de código: `npm test` executa cinco testes para storage, winding, greedy merge, costuras de chunks e materiais por face. A compilação e a validação visual com GPU real ainda precisam ser confirmadas no ambiente de deploy e no Chrome Android.
+The prepared folder can be selected in the browser or packaged as a ZIP and loaded by the engine. A compatible resource pack should contain files such as blocks.json and textures/terrain_texture.json.
 
-## Limites
+## Repository structure
 
-Este projeto **não executa o APK original** e não é uma conversão oficial do motor Bedrock. O renderer web interpreta parte dos dados dos Resource Packs em um runtime independente. `blocks.json` e `terrain_texture.json` não descrevem todas as regras do jogo.
+| Path | Responsibility |
+| --- | --- |
+| src/engine/render/ | WebGL renderer and texture atlas. |
+| src/engine/world/ | Block registry, chunk data, terrain generation, and greedy meshing. |
+| src/engine/assets/ | Resource-pack loading, demo assets, and local cache. |
+| src/engine/input/ | First-person input and camera controls. |
+| tools/bedrock/ | Local resource preparation utilities. |
+| tests/ | Automated tests for core engine behavior. |
+| docs/ | Architecture, compatibility analysis, and roadmap. |
 
-Ainda faltam física e colisão, raycast, quebrar/colocar blocos, seleção, iluminação/ambient occlusion, tintas de bioma, transparência correta, água, modelos Bedrock especiais, entidades, animações, inventário, salvamento e multiplayer.
+## Validation
 
-## Análise do APK e arquitetura
+The current test suite includes checks for storage, mesh winding, greedy merging, chunk seams, and face materials. Run npm test to execute the available tests.
 
-Consulte:
+A successful test run does not replace visual testing with real GPU hardware. Deployment behavior and Chrome Android compatibility still need device-level validation.
 
-- `docs/ANALISE-APK-26.60.md`
-- `docs/REUTILIZACAO-RECURSOS-BEDROCK.md`
-- `docs/ENGINE-CORE-v0.1.md`
-- `docs/ENGINE-ROADMAP.md`
+## Current limitations
+
+This project **does not execute the original Minecraft APK** and is not an official conversion of the Bedrock engine. It interprets a subset of resource-pack data in a separate runtime.
+
+Features still outside the current scope include full game physics and collision, raycasting, block placement and breaking, complete lighting and ambient occlusion, biome tinting, correct transparency and water, special Bedrock models, entities, animations, inventory, world saving, and multiplayer.
+
+Resource packs and game files must be supplied by the user. Do not commit APKs, proprietary game assets, or large extracted resource folders to this public repository.
+
+## Technical notes
+
+- Package version: 0.3.0
+- Development server and build: Vite
+- Runtime rendering: WebGL 2 / GLSL ES 3.00
+- Tests: Node.js built-in test runner
+
+See the ENGINE-CORE, ENGINE-ROADMAP, and Bedrock asset reuse documentation in the docs folder for implementation details.
