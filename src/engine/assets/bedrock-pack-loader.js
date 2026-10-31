@@ -232,14 +232,35 @@ export async function loadTextureOverridesFromZip(zipFile) {
 }
 
 export async function loadHostedBedrockPack(baseUrl = "/bedrock-assets/") {
+  // Prefer the unpacked static index when a full pack is deployed as individual files.
   const response = await fetch(`${baseUrl}bedrock-resource-index.json`, { cache: "no-cache" });
-  if (!response.ok) return null;
-  const index = await response.json();
-  const getFile = async (relativePath) => {
-    const result = await fetch(`${baseUrl}${normalizePath(relativePath)}`);
-    return result.ok ? await result.blob() : null;
-  };
-  return { index, getFile, root: baseUrl, fileCount: null };
+  if (response.ok) {
+    const index = await response.json();
+    const getFile = async (relativePath) => {
+      const safePath = normalizePath(relativePath);
+      if (!safePath || safePath.startsWith("/") || safePath.split("/").includes("..")) return null;
+      const result = await fetch(`${baseUrl}${safePath}`, { cache: "force-cache" });
+      return result.ok ? await result.blob() : null;
+    };
+    return { index, getFile, root: baseUrl, fileCount: null };
+  }
+
+  // A compact ZIP is easier to deploy atomically and avoids phone-side import.
+  const archiveResponse = await fetch(`${baseUrl}bedrock-core-pack.zip`, { cache: "no-cache" });
+  if (!archiveResponse.ok) return null;
+  const archiveBlob = await archiveResponse.blob();
+  if (archiveBlob.size < 22 || archiveBlob.size > 8 * 1024 * 1024) {
+    throw new Error("Pacote Bedrock hospedado tem tamanho inválido (limite 8 MiB).");
+  }
+  const signature = new Uint8Array(await archiveBlob.slice(0, 4).arrayBuffer());
+  if (signature[0] !== 0x50 || signature[1] !== 0x4b) {
+    throw new Error("Arquivo hospedado não é um ZIP Bedrock válido.");
+  }
+  const archiveFile = new File([archiveBlob], "bedrock-core-pack.zip", {
+    type: "application/zip",
+    lastModified: Date.now()
+  });
+  return loadBedrockPackFromFiles([archiveFile]);
 }
 export async function getPackBlob(pack, relativePath) {
   const result = pack.getFile(relativePath);

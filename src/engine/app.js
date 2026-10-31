@@ -63,7 +63,10 @@ async function startEngine(pack) {
     const renderDistance = isTouchDevice ? 2 : 3;
     const world = createProceduralWorld(registry, { height: 96, seed: 26060, seaLevel: 30 });
     const isDemoPack = pack.index.schema === "minecraft-weblab/demo-resource-index@1";
-    controller = new FirstPersonController(canvas);
+    controller = new FirstPersonController(canvas, {
+      getGroundHeight: (x, z) => world.getSurfaceAtWorld(x, z).height,
+      eyeHeight: 1.65
+    });
     const spawn = world.getSurfaceAtWorld(8, 8);
     controller.position = [8, spawn.height + 13, 8];
     controller.yaw = -Math.PI / 4;
