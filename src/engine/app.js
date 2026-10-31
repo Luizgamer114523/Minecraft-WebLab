@@ -5,7 +5,7 @@ import { FirstPersonController } from "./input/first-person-controller.js";
 import { buildTextureAtlas } from "./render/texture-atlas.js";
 import { WebGL2Renderer } from "./render/webgl2-renderer.js";
 import { createBedrockRegistry } from "./world/bedrock-registry.js";
-import { createDemoWorld } from "./world/terrain-generator.js";
+import { createProceduralWorld } from "./world/procedural-world.js";
 import { buildGreedyMesh } from "./world/greedy-mesher.js";
 
 const $ = (id) => document.getElementById(id);
@@ -62,25 +62,94 @@ async function startEngine(pack) {
     renderer = new WebGL2Renderer(canvas, { maxPixelRatio: 1.5 });
     const atlas = await buildTextureAtlas(pack, registry, renderer.gl, { maxTextureEdge: 64, padding: 1 });
     renderer.setAtlas(atlas);
-    setStatus("Gerando chunks e superfícies visíveis…");
-    const world = createDemoWorld(registry, { radius: 2, height: 64, seed: 26060 });
-    let totalQuads = 0;
-    for (const chunk of world.chunks) {
+    setStatus("Gerando biomas, cavernas e chunks próximos…");
+    const isTouchDevice = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints || 0) > 0;
+    const renderDistance = isTouchDevice ? 2 : 3;
+    const world = createProceduralWorld(registry, { height: 96, seed: 26060, seaLevel: 30 });
+    const isDemoPack = pack.index.schema === "minecraft-weblab/demo-resource-index@1";
+    controller = new FirstPersonController(canvas);
+    const spawn = world.getSurfaceAtWorld(8, 8);
+    controller.position = [8, spawn.height + 13, 8];
+    controller.yaw = -Math.PI / 4;
+    controller.pitch = -0.42;
+
+    const meshChunk = (chunk) => {
       const mesh = buildGreedyMesh(chunk, world.getNeighborLookup(chunk), registry.getFaceMaterialId);
       renderer.addChunk(mesh, chunk.x, chunk.z, atlas.rects);
-      totalQuads += mesh.quadCount;
+    };
+    const remeshNeighbors = (chunkX, chunkZ) => {
+      for (const [dx, dz] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const neighbor = world.getChunk(chunkX + dx, chunkZ + dz);
+        if (neighbor) meshChunk(neighbor);
+      }
+    };
+    const updateWorldMetrics = () => {
+      const totalQuads = renderer.chunks.reduce((sum, chunk) => sum + chunk.quadCount, 0);
+      const chunkCount = renderer.chunks.length;
+      $("mesh-label").textContent = `${chunkCount} chunks ativos · ${totalQuads.toLocaleString("pt-BR")} faces · streaming procedural`;
+      $("world-label").textContent = `${isDemoPack ? "WebLab Demo" : "Bedrock"} · ${registry.stats.blockCount} blocos · ${chunkCount} chunks`;
+    };
+
+    const desiredChunkKeys = new Set();
+    let pendingChunks = [];
+    let lastCenterChunk = "";
+    let pruneAfterLoad = false;
+    const refreshChunkWindow = () => {
+      const centerX = Math.floor(controller.position[0] / 16);
+      const centerZ = Math.floor(controller.position[2] / 16);
+      const centerKey = `${centerX},${centerZ}`;
+      if (centerKey === lastCenterChunk) return;
+      lastCenterChunk = centerKey;
+      desiredChunkKeys.clear();
+      const missing = [];
+      for (let dz = -renderDistance; dz <= renderDistance; dz++) {
+        for (let dx = -renderDistance; dx <= renderDistance; dx++) {
+          if (dx * dx + dz * dz > renderDistance * renderDistance + 1) continue;
+          const chunkX = centerX + dx, chunkZ = centerZ + dz;
+          const key = `${chunkX},${chunkZ}`;
+          desiredChunkKeys.add(key);
+          if (!world.getChunk(chunkX, chunkZ)) missing.push({ x: chunkX, z: chunkZ, distance: dx * dx + dz * dz });
+        }
+      }
+      missing.sort((a, b) => a.distance - b.distance);
+      pendingChunks = missing;
+      pruneAfterLoad = true;
+    };
+    const finishChunkWindow = () => {
+      if (!pruneAfterLoad || pendingChunks.length) return;
+      const removed = [];
+      for (const chunk of [...world.chunks.values()]) {
+        const key = `${chunk.x},${chunk.z}`;
+        if (desiredChunkKeys.has(key)) continue;
+        renderer.removeChunk(chunk.x, chunk.z);
+        world.unloadChunk(chunk.x, chunk.z);
+        removed.push({ x: chunk.x, z: chunk.z });
+      }
+      for (const chunk of removed) remeshNeighbors(chunk.x, chunk.z);
+      pruneAfterLoad = false;
+      updateWorldMetrics();
+    };
+
+    // Preload the initial view before showing the HUD; only a small mobile-safe window is built.
+    refreshChunkWindow();
+    for (const item of pendingChunks) world.generateChunk(item.x, item.z);
+    const initialChunks = [...world.chunks.values()];
+    for (let index = 0; index < initialChunks.length; index++) {
+      meshChunk(initialChunks[index]);
+      if (index % 3 === 2) await new Promise((resolve) => requestAnimationFrame(resolve));
     }
-    controller = new FirstPersonController(canvas);
+    pendingChunks = [];
+    pruneAfterLoad = false;
+    updateWorldMetrics();
     engineStarted = true;
     loading.classList.add("hidden");
     hud.hidden = false;
-    const isDemoPack = pack.index.schema === "minecraft-weblab/demo-resource-index@1";
     $("world-label").textContent = isDemoPack
       ? `WebLab Demo Pack · ${registry.stats.blockCount} blocos`
       : `Bedrock resource pack · ${registry.stats.blockCount} blocos`;
     $("asset-label").textContent = `${atlas.loadedTextures} texturas carregadas${atlas.overriddenTextures ? ` · ${atlas.overriddenTextures} overrides 512px` : ""}${atlas.failedTextures ? ` · ${atlas.failedTextures} falhas` : ""}`;
     $("engine-label").textContent = `WebGL 2 · atlas ${atlas.width}×${atlas.height} · limite GPU ${gpuLimit}`;
-    $("mesh-label").textContent = `${world.chunks.length} chunks · ${totalQuads.toLocaleString("pt-BR")} faces após greedy meshing`;
+    updateWorldMetrics();
     $("pack-info").textContent = isDemoPack
       ? "Pacote de teste gerado pelo WebLab. Não contém arquivos originais do Minecraft."
       : pack.index.source?.game_version
@@ -95,6 +164,16 @@ async function startEngine(pack) {
       const delta = Math.min((now - lastFrame) / 1000, 0.05);
       lastFrame = now;
       controller.update(delta);
+      refreshChunkWindow();
+      if (!pendingChunks.length) finishChunkWindow();
+      if (pendingChunks.length) {
+        const nextChunk = pendingChunks.shift();
+        const chunk = world.generateChunk(nextChunk.x, nextChunk.z);
+        meshChunk(chunk);
+        remeshNeighbors(nextChunk.x, nextChunk.z);
+        if (!pendingChunks.length) finishChunkWindow();
+        updateWorldMetrics();
+      }
       const stats = renderer.render(controller);
       fpsFrames++;
       if (now - fpsStarted >= 1000) {

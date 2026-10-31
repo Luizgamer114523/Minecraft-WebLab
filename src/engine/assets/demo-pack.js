@@ -5,7 +5,16 @@ const PALETTES = {
   stone: ["#7b7b7b", "#686868", "#898989", "#5c5c5c"],
   bedrock: ["#474747", "#333333", "#5a5a5a", "#262626"],
   log: ["#80572f", "#93683b", "#684728", "#a07846"],
-  leaves: ["#326d2e", "#3c7d35", "#245c27", "#4b873b"]
+  leaves: ["#326d2e", "#3c7d35", "#245c27", "#4b873b"],
+  sand: ["#d9c58e", "#cbb47a", "#e4d29f", "#bda56e"],
+  sandstone: ["#b88d5a", "#c99d67", "#a97c4f", "#d2aa76"],
+  gravel: ["#77736c", "#918b82", "#615f5b", "#a19a8e"],
+  water: ["#347db5", "#3f91c9", "#286da7", "#65a9d3"],
+  snow: ["#e5edf0", "#ffffff", "#cdd9df", "#eef4f5"],
+  coal_ore: ["#777777", "#6b6b6b", "#353535", "#898989"],
+  iron_ore: ["#777777", "#6b6b6b", "#a46d4d", "#898989"],
+  gold_ore: ["#777777", "#6b6b6b", "#e0b52c", "#898989"],
+  diamond_ore: ["#777777", "#6b6b6b", "#41c9d8", "#898989"]
 };
 
 function hash(x, y, seed) {
@@ -29,6 +38,8 @@ function makeTexture(alias) {
       if (alias === "grass_side" && y < 3) paletteIndex = hash(x, y, 7) % 2 ? 0 : 1;
       if (alias === "log" && x > 5 && x < 10) paletteIndex = 1;
       if (alias === "leaves" && hash(x, y, 13) % 7 === 0) paletteIndex = 3;
+      if (alias === "water") paletteIndex = (y + Math.floor(Math.sin(x * 0.8) * 2) + hash(x, y, 17) % 2) % colors.length;
+      if (alias.endsWith("_ore")) paletteIndex = hash(x, y, 31) % 6 === 0 ? 2 : hash(x, y, 19) % 3;
 
       const hex = colors[paletteIndex].slice(1);
       const index = (y * 16 + x) * 4;
@@ -67,8 +78,17 @@ export async function createDemoBedrockPack() {
     "minecraft:dirt": { faces: { all: "dirt" } },
     "minecraft:stone": { faces: { all: "stone" } },
     "minecraft:bedrock": { faces: { all: "bedrock" } },
-    "minecraft:oak_log": { faces: { all: "log" } },
-    "minecraft:oak_leaves": { faces: { all: "leaves" } }
+    "minecraft:oak_log": { faces: { up: "log", down: "log", side: "log", all: "log" } },
+    "minecraft:oak_leaves": { faces: { all: "leaves" } },
+    "minecraft:sand": { faces: { all: "sand" } },
+    "minecraft:sandstone": { faces: { all: "sandstone" } },
+    "minecraft:gravel": { faces: { all: "gravel" } },
+    "minecraft:water": { faces: { all: "water" } },
+    "minecraft:snow": { faces: { all: "snow" } },
+    "minecraft:coal_ore": { faces: { all: "coal_ore" } },
+    "minecraft:iron_ore": { faces: { all: "iron_ore" } },
+    "minecraft:gold_ore": { faces: { all: "gold_ore" } },
+    "minecraft:diamond_ore": { faces: { all: "diamond_ore" } }
   };
 
   return {
