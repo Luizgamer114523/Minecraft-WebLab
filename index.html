@@ -1,69 +1,361 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<meta name="theme-color" content="#17251d"><title>Minecraft WebLab</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b120f">
+<meta name="description" content="Diagnóstico local de compatibilidade do navegador para o projeto Minecraft WebLab.">
+<title>Minecraft WebLab | Diagnóstico Web</title>
 <style>
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#87bce8;font-family:system-ui,Arial;color:white}#game{position:fixed;inset:0}canvas{display:block}
-#top{position:fixed;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;pointer-events:none;text-shadow:0 2px 4px #000}
-#brand{font-weight:800;letter-spacing:.5px}#stats{font-size:12px;text-align:right}
-#cross{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);font-size:26px;text-shadow:0 1px 3px #000;pointer-events:none}
-#hotbar{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);display:flex;gap:5px;padding:6px;background:#10182099;border:2px solid #ffffff88;border-radius:8px}
-.slot{width:48px;height:48px;border:2px solid #ffffff55;border-radius:5px;background:#263238bb;display:grid;place-items:center;font-size:11px}.slot.active{border:3px solid white;background:#ffffff44}.swatch{width:23px;height:23px;border:1px solid #ffffff77}
-#help{position:fixed;top:55px;left:12px;background:#10182099;padding:8px 10px;border-radius:6px;font-size:12px;max-width:230px}
-#actions{position:fixed;right:16px;bottom:95px;display:flex;flex-direction:column;gap:10px}
-button{border:1px solid #ffffff99;background:#15251dcc;color:white;border-radius:9px;padding:12px;font-weight:700;touch-action: manipulation}
-#move{position:fixed;left:16px;bottom:95px;display:none;gap:8px}#move button{width:54px;height:54px;padding:0;font-size:20px}
-@media(pointer:coarse){#move{display:grid;grid-template-columns:repeat(3,54px)}#help{max-width:190px}#hotbar{bottom:12px}.slot{width:39px;height:42px}}
-#overlay{position:fixed;inset:0;background:#101820bb;display:grid;place-items:center;text-align:center;padding:24px}
-.panel{max-width:430px;background:#17251df2;border:1px solid #ffffff44;border-radius:16px;padding:24px;box-shadow:0 15px 50px #0008}.panel h1{margin:0 0 8px}.panel p{color:#d2ded5;line-height:1.5}#start{background:#4b9b51;border:0;padding:14px 24px;font-size:16px}
+:root{color-scheme:dark;--bg:#0b120f;--panel:#121d18;--panel2:#17251e;--line:#27382e;--text:#edf5ef;--muted:#a0b3a6;--green:#80d69a;--green2:#b6f2c4;--yellow:#f1ca74;--red:#ff8f83;--blue:#8abce8;--radius:18px}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--bg);scroll-behavior:smooth}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 12% -8%,#1d3b2a 0,transparent 36rem),var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit}
+.wrap{width:min(1080px,100% - 32px);margin:0 auto;padding:26px 0 48px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:38px}
+.brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:.02em}
+.logo{width:38px;height:38px;border:1px solid #477658;background:linear-gradient(145deg,#2e6744,#173b29);border-radius:12px;display:grid;place-items:center;color:#c9f5d2;font-size:19px}
+.brand small{display:block;color:var(--muted);font-size:10px;font-weight:600;letter-spacing:.14em;margin-top:2px}
+.tag{border:1px solid var(--line);border-radius:999px;padding:7px 11px;color:var(--muted);font-size:11px;white-space:nowrap}
+.hero{display:grid;grid-template-columns:1fr auto;align-items:end;gap:20px;margin-bottom:24px}
+.eyebrow{color:var(--green);font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;margin-bottom:11px}
+h1{font-size:clamp(30px,6vw,50px);line-height:1.02;letter-spacing:-.045em;margin:0;max-width:720px}
+.lead{color:var(--muted);line-height:1.65;max-width:650px;font-size:14px;margin:15px 0 0}
+.actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:22px}
+.btn{border:1px solid var(--line);background:#18251e;color:var(--text);padding:12px 15px;border-radius:12px;font-size:13px;font-weight:750;cursor:pointer;min-height:44px;transition:transform .15s,border-color .15s,background .15s}
+.btn:active{transform:scale(.98)}
+.btn:disabled{opacity:.55;cursor:wait}
+.btn.primary{background:var(--green);color:#102016;border-color:var(--green);box-shadow:0 8px 24px #80d69a20}
+.btn.ghost{background:transparent}
+.runstate{min-width:148px;text-align:right;color:var(--muted);font-size:12px;line-height:1.5}
+.summary{display:grid;grid-template-columns:1.35fr repeat(3,1fr);gap:10px;margin:28px 0 30px}
+.summary-card{min-height:94px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(145deg,#17251e,#101914);padding:15px}
+.summary-card.main{border-color:#3c6549}
+.summary-label{font-size:10px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:800}
+.summary-value{font-size:28px;letter-spacing:-.04em;font-weight:850;margin-top:8px}
+.summary-note{font-size:11px;color:var(--muted);margin-top:2px}
+.section-head{display:flex;justify-content:space-between;align-items:end;gap:12px;margin:0 0 13px}
+h2{font-size:18px;letter-spacing:-.02em;margin:0}
+.section-head p{margin:5px 0 0;color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.card{border:1px solid var(--line);border-radius:var(--radius);background:linear-gradient(145deg,var(--panel2),var(--panel));padding:16px;min-width:0}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.card-title{font-weight:800;font-size:14px;display:flex;align-items:center;gap:9px}
+.card-icon{width:31px;height:31px;border-radius:10px;background:#21362a;border:1px solid #355440;display:grid;place-items:center;color:var(--green2);font-size:15px;flex:none}
+.status{font-size:10px;font-weight:850;letter-spacing:.04em;text-transform:uppercase;border-radius:999px;padding:6px 8px;white-space:nowrap;border:1px solid var(--line);color:var(--muted);background:#0e1712}
+.status.pass{color:var(--green2);border-color:#386949;background:#173323}
+.status.warn{color:var(--yellow);border-color:#67552d;background:#302714}
+.status.fail{color:var(--red);border-color:#6d3733;background:#351d1c}
+.status.loading{color:var(--blue);border-color:#345875;background:#182b3a}
+.detail{color:var(--muted);font-size:12px;line-height:1.55;margin:12px 0 0;overflow-wrap:anywhere}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:#d0ded4;overflow-wrap:anywhere}
+.inline-btn{display:inline-flex;margin-top:11px;min-height:36px;padding:8px 11px;font-size:11px}
+.device{margin-top:30px}
+.device-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;margin-top:12px}
+.device-item{border:1px solid var(--line);background:#101914;border-radius:13px;padding:12px;min-width:0}
+.device-item span{display:block;color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:800}
+.device-item strong{display:block;font-size:14px;margin-top:7px;overflow-wrap:anywhere}
+.note{border:1px solid #3a563f;background:#14251a;border-radius:16px;padding:15px;margin-top:25px}
+.note strong{font-size:13px}
+.note p{margin:6px 0 0;color:#b8c9bd;font-size:12px;line-height:1.6}
+footer{border-top:1px solid var(--line);margin-top:32px;padding-top:17px;color:var(--muted);font-size:11px;line-height:1.65;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+a{color:var(--green2);text-decoration:none}
+a:hover{text-decoration:underline}
+@media(max-width:700px){.wrap{width:min(100% - 24px,600px);padding-top:16px}header{margin-bottom:30px}.hero{grid-template-columns:1fr}.runstate{text-align:left}.summary{grid-template-columns:repeat(3,1fr);gap:7px}.summary-card.main{grid-column:1/-1;min-height:80px}.summary-card{min-height:78px;padding:12px}.summary-value{font-size:24px}.grid{grid-template-columns:1fr}.device-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.tag{font-size:10px}.lead{font-size:13px}}
+@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto!important;transition:none!important}}
 </style>
 </head>
-<body><div id="game"></div>
-<div id="top"><div id="brand">MINECRAFT WEBLAB <small>0.1.0</small></div><div id="stats">Carregando mundo…</div></div>
-<div id="help">WASD mover · Espaço pular · Clique quebrar · Botão direito colocar · 1–5 selecionar</div><div id="cross">+</div>
-<div id="hotbar"></div><div id="actions"><button id="break">⛏ Quebrar</button><button id="place">▣ Colocar</button><button id="save">Salvar mundo</button></div>
-<div id="move"><button data-k="w">▲</button><button data-k="a">◀</button><button data-k="s">▼</button><button data-k="d">▶</button></div>
-<div id="overlay"><div class="panel"><h1>Minecraft WebLab</h1><p>Protótipo independente de mundo voxel, inspirado em mecânicas de sandbox. Toque para iniciar. No celular, arraste a tela para olhar e use os botões.</p><button id="start">Entrar no mundo</button></div></div>
-<script type="module">
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js';
-const mount=document.querySelector('#game'),stats=document.querySelector('#stats');
-const scene=new THREE.Scene();scene.background=new THREE.Color(0x87bce8);scene.fog=new THREE.Fog(0x87bce8,24,70);
-const camera=new THREE.PerspectiveCamera(75,innerWidth/innerHeight,.1,120);
-const renderer=new THREE.WebGLRenderer({antialias:false,powerPreference:'high-performance'});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.shadowMap.enabled=false;mount.appendChild(renderer.domElement);
-scene.add(new THREE.HemisphereLight(0xd9efff,0x66734b,2));const sun=new THREE.DirectionalLight(0xffffff,2);sun.position.set(20,35,12);scene.add(sun);
-const mats={grass:new THREE.MeshLambertMaterial({color:0x62a844}),dirt:new THREE.MeshLambertMaterial({color:0x805334}),stone:new THREE.MeshLambertMaterial({color:0x858b8c}),wood:new THREE.MeshLambertMaterial({color:0x80552f}),leaves:new THREE.MeshLambertMaterial({color:0x397d39}),sand:new THREE.MeshLambertMaterial({color:0xd9c27b})};
-const geo=new THREE.BoxGeometry(1,1,1),blocks=new Map(),meshes=[];const key=(x,y,z)=>x+','+y+','+z;
-function add(x,y,z,type){const k=key(x,y,z);if(blocks.has(k))return;const m=new THREE.Mesh(geo,mats[type]||mats.dirt);m.position.set(x,y,z);m.userData={x,y,z,type};scene.add(m);blocks.set(k,m);meshes.push(m)}
-function remove(m){scene.remove(m);blocks.delete(key(m.userData.x,m.userData.y,m.userData.z));}
-let seed=93841;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
-function height(x,z){return Math.floor(2+Math.sin(x*.23)*1.3+Math.cos(z*.19)*1.2+Math.sin((x+z)*.11)*.8)}
-for(let x=-16;x<=16;x++)for(let z=-16;z<=16;z++){let h=height(x,z);for(let y=-2;y<h;y++)add(x,y,z,y===h-1?'grass':y>-2?'dirt':'stone');if(rand()>.986&&Math.abs(x)>2&&Math.abs(z)>2){for(let y=h;y<h+4;y++)add(x,y,z,'wood');for(let dx=-2;dx<=2;dx++)for(let dz=-2;dz<=2;dz++)for(let dy=2;dy<=4;dy++)if(Math.abs(dx)+Math.abs(dz)+(dy===4?1:0)<5)add(x+dx,h+dy,z+dz,'leaves')}}
-const player={pos:new THREE.Vector3(0,7,7),vel:new THREE.Vector3(),yaw:0,pitch:0,onGround:false};camera.position.copy(player.pos);
-const ray=new THREE.Raycaster();let selected='dirt',selectedIndex=1;const types=['grass','dirt','stone','wood','sand'];const bar=document.querySelector('#hotbar');
-types.forEach((t,i)=>{let e=document.createElement('div');e.className='slot'+(i===1?' active':'');e.innerHTML='<div class="swatch" style="background:'+({grass:'#62a844',dirt:'#805334',stone:'#858b8c',wood:'#80552f',sand:'#d9c27b'}[t])+'"></div><small>'+(i+1)+'</small>';e.onclick=()=>select(i);bar.append(e)});
-function select(i){selectedIndex=i;selected=types[i];[...bar.children].forEach((e,j)=>e.classList.toggle('active',j===i))}
-const keys={};addEventListener('keydown',e=>{keys[e.key.toLowerCase()]=true;if('12345'.includes(e.key))select(+e.key-1)});addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
-let locked=false;document.querySelector('#start').onclick=()=>{document.querySelector('#overlay').style.display='none';if(matchMedia('(pointer:fine)').matches)renderer.domElement.requestPointerLock?.()};
-document.addEventListener('pointerlockchange',()=>locked=document.pointerLockElement===renderer.domElement);
-addEventListener('mousemove',e=>{if(locked){player.yaw-=e.movementX*.002;player.pitch=Math.max(-1.45,Math.min(1.45,player.pitch-e.movementY*.002))}});
-let touch=null;renderer.domElement.addEventListener('touchstart',e=>{if(e.touches.length){touch={x:e.touches[0].clientX,y:e.touches[0].clientY}}},{passive:true});renderer.domElement.addEventListener('touchmove',e=>{if(touch&&e.touches.length){let t=e.touches[0];player.yaw-=(t.clientX-touch.x)*.006;player.pitch=Math.max(-1.35,Math.min(1.35,player.pitch-(t.clientY-touch.y)*.006));touch={x:t.clientX,y:t.clientY}}},{passive:true});renderer.domElement.addEventListener('touchend',()=>touch=null);
-document.querySelectorAll('#move button').forEach(b=>{let k=b.dataset.k;b.addEventListener('touchstart',e=>{e.preventDefault();keys[k]=true});['touchend','touchcancel'].forEach(ev=>b.addEventListener(ev,()=>keys[k]=false))});
-function target(){camera.updateMatrixWorld();ray.setFromCamera(new THREE.Vector2(0,0),camera);return ray.intersectObjects(meshes,false).find(h=>h.distance<6)}
-function mine(){let h=target();if(h)remove(h.object)}
-function put(){let h=target();if(!h)return;let p=h.object.position.clone().add(h.face.normal);let x=Math.round(p.x),y=Math.round(p.y),z=Math.round(p.z);if(Math.abs(x-player.pos.x)<.8&&Math.abs(z-player.pos.z)<.8&&Math.abs(y-player.pos.y)<1.8)return;add(x,y,z,selected)}
-renderer.domElement.addEventListener('click',()=>{if(!locked&&!matchMedia('(pointer:coarse)').matches)return;mine()});renderer.domElement.addEventListener('contextmenu',e=>{e.preventDefault();put()});document.querySelector('#break').onclick=mine;document.querySelector('#place').onclick=put;
-document.querySelector('#save').onclick=()=>{let data=[...blocks.values()].map(m=>m.userData);localStorage.setItem('weblab-world',JSON.stringify({data,pos:player.pos.toArray(),seed}));stats.textContent='Mundo salvo localmente';};
-function load(){try{let s=JSON.parse(localStorage.getItem('weblab-world'));if(s?.data?.length){blocks.forEach?.(()=>{});for(const m of [...blocks.values()])remove(m);s.data.forEach(b=>add(b.x,b.y,b.z,b.type));player.pos.fromArray(s.pos||[0,7,7]);seed=s.seed||seed}}catch{}}
-load();
-function collides(x,y,z){for(let dx of [-.25,.25])for(let dz of [-.25,.25])for(let dy of [-.8,.8])if(blocks.has(key(Math.floor(x+dx+.5),Math.floor(y+dy+.5),Math.floor(z+dz+.5))))return true;return false}
-let last=performance.now(),frames=0,stamp=last;
-function loop(now){requestAnimationFrame(loop);let dt=Math.min((now-last)/1000,.04);last=now;
-let forward=(keys.w?1:0)-(keys.s?1:0),side=(keys.d?1:0)-(keys.a?1:0);let speed=keys.shift?8:5;let vx=(Math.sin(player.yaw)*forward+Math.cos(player.yaw)*side)*speed*dt,vz=(-Math.cos(player.yaw)*forward+Math.sin(player.yaw)*side)*speed*dt;
-if(!collides(player.pos.x+vx,player.pos.y,player.pos.z))player.pos.x+=vx;if(!collides(player.pos.x,player.pos.y,player.pos.z+vz))player.pos.z+=vz;
-if((keys[' ']||keys.w&&keys[' '])&&player.onGround){player.vel.y=8;player.onGround=false}player.vel.y-=22*dt;let ny=player.pos.y+player.vel.y*dt;if(collides(player.pos.x,ny,player.pos.z)){if(player.vel.y<0)player.onGround=true;player.vel.y=0}else{player.pos.y=ny;player.onGround=false}
-if(player.pos.y< -8){player.pos.set(0,8,7);player.vel.set(0,0,0)}
-camera.position.copy(player.pos);camera.rotation.order='YXZ';camera.rotation.y=player.yaw;camera.rotation.x=player.pitch;
-frames++;if(now-stamp>1000){stats.textContent=frames+' FPS · '+blocks.size+' blocos';frames=0;stamp=now}renderer.render(scene,camera)}
-requestAnimationFrame(loop);addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight)});
-</script></body></html>
+<body>
+<div class="wrap">
+<header>
+  <div class="brand"><div class="logo">▦</div><div>MINECRAFT WEBLAB<small>BEDROCK 1.26.60 · WEB COMPATIBILITY LAB</small></div></div>
+  <div class="tag">DIAGNÓSTICO LOCAL · v0.2.0</div>
+</header>
+
+<main>
+<section class="hero">
+  <div>
+    <div class="eyebrow">Etapa 01 · capacidade do navegador</div>
+    <h1>Vamos descobrir<br>o que seu celular aguenta.</h1>
+    <p class="lead">Este teste verifica as APIs que uma futura versão web precisaria usar: renderização 3D, áudio, armazenamento, controles e execução em threads. Ele não instala nada e não envia dados do aparelho para um servidor.</p>
+    <div class="actions">
+      <button class="btn primary" id="run">▶ Executar diagnóstico</button>
+      <button class="btn ghost" id="copy" disabled>Copiar relatório</button>
+      <button class="btn ghost" id="download" disabled>Baixar JSON</button>
+    </div>
+  </div>
+  <div class="runstate" id="runstate" aria-live="polite">Aguardando primeiro teste</div>
+</section>
+
+<section class="summary" aria-label="Resumo do diagnóstico">
+  <div class="summary-card main"><div class="summary-label">Compatibilidade observada</div><div class="summary-value" id="overall">—</div><div class="summary-note" id="overall-note">Execute o diagnóstico</div></div>
+  <div class="summary-card"><div class="summary-label">Disponíveis</div><div class="summary-value" id="pass-count">—</div><div class="summary-note">testes aprovados</div></div>
+  <div class="summary-card"><div class="summary-label">Atenção</div><div class="summary-value" id="warn-count">—</div><div class="summary-note">limitações ou ausências</div></div>
+  <div class="summary-card"><div class="summary-label">Falhas</div><div class="summary-value" id="fail-count">—</div><div class="summary-note">testes que não passaram</div></div>
+</section>
+
+<section>
+  <div class="section-head"><div><h2>Capacidades da plataforma</h2><p>Testes executados diretamente neste navegador.</p></div><div class="tag" id="tested-at">Ainda não testado</div></div>
+  <div class="grid" id="results">
+    <article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">▧</span>WebGL 2</div><span class="status loading">Pendente</span></div><p class="detail">Renderização 3D e shaders.</p></article>
+    <article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">◇</span>WebGPU</div><span class="status loading">Pendente</span></div><p class="detail">Backend gráfico moderno.</p></article>
+    <article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">♫</span>Áudio</div><span class="status loading">Pendente</span></div><p class="detail">Web Audio API.</p></article>
+    <article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">▤</span>Armazenamento</div><span class="status loading">Pendente</span></div><p class="detail">IndexedDB e espaço disponível.</p></article>
+    <article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">✣</span>Toque e ponteiros</div><span class="status loading">Pendente</span></div><p class="detail">Controles touch e eventos de ponteiro.</p></article>
+    <article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">⌖</span>Gamepad</div><span class="status loading">Pendente</span></div><p class="detail">API de controles externos.</p></article>
+    <article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">⇄</span>Threads e workers</div><span class="status loading">Pendente</span></div><p class="detail">Workers, SharedArrayBuffer e isolamento.</p></article>
+    <article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">↗</span>Rede</div><span class="status loading">Pendente</span></div><p class="detail">Fetch, WebSocket e estado online.</p></article>
+  </div>
+</section>
+
+<section class="device">
+  <div class="section-head"><div><h2>Perfil do dispositivo</h2><p>Informações gerais disponibilizadas pelo navegador. Alguns valores podem ser ocultados por privacidade.</p></div></div>
+  <div class="device-grid" id="device-grid">
+    <div class="device-item"><span>Navegador</span><strong>—</strong></div>
+    <div class="device-item"><span>Sistema</span><strong>—</strong></div>
+    <div class="device-item"><span>Núcleos lógicos</span><strong>—</strong></div>
+    <div class="device-item"><span>Memória estimada</span><strong>—</strong></div>
+    <div class="device-item"><span>Resolução CSS</span><strong>—</strong></div>
+    <div class="device-item"><span>Pixel ratio</span><strong>—</strong></div>
+    <div class="device-item"><span>Conexão</span><strong>—</strong></div>
+    <div class="device-item"><span>Contexto seguro</span><strong>—</strong></div>
+  </div>
+</section>
+
+<section class="note">
+  <strong>O que este diagnóstico significa (e o que não significa)</strong>
+  <p>Ter WebGL 2, WebGPU ou áudio disponível não prova que o Minecraft Bedrock original já pode ser executado aqui. O motor do APK ainda precisaria de um port autorizado para WebAssembly e de adaptações nas APIs Android. Este teste mede somente o navegador e o dispositivo atual; não executa nem modifica arquivos do Minecraft.</p>
+</section>
+</main>
+
+<footer>
+  <div>WebLab · relatório gerado localmente no aparelho</div>
+  <div><a href="https://github.com/Luizgamer114523/Minecraft-WebLab" target="_blank" rel="noopener">Código no GitHub</a> · <a href="https://github.com/Luizgamer114523/Minecraft-WebLab/blob/main/docs/MAPEAMENTO-COMPATIBILIDADE-WEB.md" target="_blank" rel="noopener">Mapa de compatibilidade</a></div>
+</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+const $ = id => document.getElementById(id);
+const state = {tests:{},device:{},timestamp:null};
+const definitions = [
+  {id:'webgl2',name:'WebGL 2',icon:'▧',run:testWebGL},
+  {id:'webgpu',name:'WebGPU',icon:'◇',run:testWebGPU},
+  {id:'audio',name:'Áudio',icon:'♫',run:testAudio},
+  {id:'storage',name:'Armazenamento',icon:'▤',run:testStorage},
+  {id:'touch',name:'Toque e ponteiros',icon:'✣',run:testTouch},
+  {id:'gamepad',name:'Gamepad',icon:'⌖',run:testGamepad},
+  {id:'threads',name:'Threads e workers',icon:'⇄',run:testThreads},
+  {id:'network',name:'Rede',icon:'↗',run:testNetwork}
+];
+function result(status,detail,extra){return Object.assign({status:status,detail:detail},extra||{});}
+function testWebGL(){
+  const canvas=document.createElement('canvas');
+  let gl=null;
+  try{gl=canvas.getContext('webgl2',{alpha:false,antialias:false,depth:true,stencil:false,powerPreference:'high-performance'});}catch(e){}
+  if(!gl)return result('fail','WebGL 2 não conseguiu criar um contexto. O navegador, GPU ou driver pode estar bloqueando a API.');
+  const vs=gl.createShader(gl.VERTEX_SHADER);
+  gl.shaderSource(vs,'#version 300 es\nin vec2 a; void main(){gl_Position=vec4(a,0.0,1.0);}');
+  gl.compileShader(vs);
+  const fs=gl.createShader(gl.FRAGMENT_SHADER);
+  gl.shaderSource(fs,'#version 300 es\nprecision mediump float; out vec4 c; void main(){c=vec4(0.1,0.8,0.3,1.0);}');
+  gl.compileShader(fs);
+  if(!gl.getShaderParameter(vs,gl.COMPILE_STATUS)||!gl.getShaderParameter(fs,gl.COMPILE_STATUS)){
+    const message=gl.getShaderInfoLog(vs)||gl.getShaderInfoLog(fs)||'Falha ao compilar shaders.';
+    gl.deleteShader(vs);gl.deleteShader(fs);return result('fail','Contexto criado, mas compilação GLSL falhou: '+message);
+  }
+  const program=gl.createProgram();gl.attachShader(program,vs);gl.attachShader(program,fs);gl.linkProgram(program);
+  if(!gl.getProgramParameter(program,gl.LINK_STATUS))return result('fail','WebGL 2 criou contexto, mas falhou ao ligar o programa: '+gl.getProgramInfoLog(program));
+  gl.useProgram(program);
+  const buffer=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buffer);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,3,-1,-1,3]),gl.STATIC_DRAW);
+  const loc=gl.getAttribLocation(program,'a');gl.enableVertexAttribArray(loc);gl.vertexAttribPointer(loc,2,gl.FLOAT,false,0,0);
+  gl.viewport(0,0,canvas.width,canvas.height);gl.drawArrays(gl.TRIANGLES,0,3);
+  const error=gl.getError();
+  const maxTexture=gl.getParameter(gl.MAX_TEXTURE_SIZE);
+  const maxRender=gl.getParameter(gl.MAX_RENDERBUFFER_SIZE);
+  const textureUnits=gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+  const extensions=gl.getSupportedExtensions()||[];
+  gl.deleteBuffer(buffer);gl.deleteProgram(program);gl.deleteShader(vs);gl.deleteShader(fs);gl.getExtension('WEBGL_lose_context')?.loseContext();
+  if(error!==gl.NO_ERROR)return result('warn','Contexto e shaders funcionaram, mas o desenho de teste retornou erro GL '+error+'.',{maxTexture:maxTexture,extensions:extensions});
+  return result('pass','Contexto criado, shaders compilados e triângulo de teste desenhado sem erro GL.',{maxTexture:maxTexture,maxRenderbuffer:maxRender,textureUnits:textureUnits,extensionCount:extensions.length,extensions:extensions});
+}
+async function testWebGPU(){
+  if(!navigator.gpu)return result('warn','WebGPU não está exposto neste navegador. WebGL 2 continua sendo a primeira rota de compatibilidade.');
+  try{
+    const adapter=await navigator.gpu.requestAdapter();
+    if(!adapter)return result('warn','O navegador expõe WebGPU, mas não encontrou um adaptador disponível.');
+    const info=adapter.info||{};
+    const limits=adapter.limits||{};
+    let deviceOk=false;
+    try{const device=await adapter.requestDevice();deviceOk=true;device.destroy();}catch(e){}
+    return result(deviceOk?'pass':'warn',deviceOk?'Adaptador e dispositivo WebGPU foram inicializados.':'Adaptador detectado, mas a criação do dispositivo falhou.',{
+      vendor:info.vendor||'não informado',architecture:info.architecture||'não informada',
+      maxTexture2D:limits.maxTextureDimension2D||null,maxBufferSize:limits.maxBufferSize||null,
+      features:Array.from(adapter.features||[])
+    });
+  }catch(e){return result('warn','WebGPU foi encontrado, mas a inicialização falhou: '+(e.message||String(e)));}
+}
+function testAudio(){
+  const Audio=window.AudioContext||window.webkitAudioContext;
+  if(!Audio)return result('fail','Web Audio API não está disponível.');
+  return result('pass','Web Audio API disponível. O navegador exige um toque do usuário para liberar reprodução.',{sampleRateHint:'Será medido ao iniciar o teste de som.'});
+}
+async function testStorage(){
+  if(!('indexedDB' in window))return result('fail','IndexedDB não está disponível.');
+  let db;
+  try{
+    db=await new Promise((resolve,reject)=>{
+      const req=indexedDB.open('weblab-compat-probe',1);
+      req.onupgradeneeded=()=>req.result.createObjectStore('checks');
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error||new Error('Falha ao abrir IndexedDB'));
+      req.onblocked=()=>reject(new Error('A abertura do banco ficou bloqueada'));
+    });
+    await new Promise((resolve,reject)=>{
+      const tx=db.transaction('checks','readwrite');
+      tx.objectStore('checks').put('ok','probe');
+      tx.oncomplete=resolve;tx.onerror=()=>reject(tx.error||new Error('Falha de gravação'));
+    });
+    const value=await new Promise((resolve,reject)=>{
+      const tx=db.transaction('checks','readonly');
+      const req=tx.objectStore('checks').get('probe');
+      req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error);
+    });
+    db.close();db=null;
+    await new Promise(resolve=>{const req=indexedDB.deleteDatabase('weblab-compat-probe');req.onsuccess=resolve;req.onerror=resolve;req.onblocked=resolve;});
+    let estimate=null;
+    if(navigator.storage?.estimate){try{estimate=await navigator.storage.estimate();}catch(e){}}
+    const usage=estimate&&Number.isFinite(estimate.usage)?(estimate.usage/1048576).toFixed(1)+' MB':'indisponível';
+    const quota=estimate&&Number.isFinite(estimate.quota)?(estimate.quota/1073741824).toFixed(2)+' GB':'indisponível';
+    return result(value==='ok'?'pass':'warn','IndexedDB grava e lê dados de teste. Uso estimado: '+usage+'; cota estimada: '+quota+'.',{usage:estimate?.usage??null,quota:estimate?.quota??null});
+  }catch(e){try{db?.close();}catch(ignore){}return result('fail','Falha no teste de armazenamento: '+(e.message||String(e)));}
+}
+function testTouch(){
+  const points=navigator.maxTouchPoints||0;
+  const pointer=!!window.PointerEvent;
+  const coarse=!!(window.matchMedia&&matchMedia('(pointer: coarse)').matches);
+  if(!pointer)return result('warn','Pointer Events não está disponível. Pontos de toque reportados: '+points+'.');
+  return result(points>0||coarse?'pass':'warn',points>0?'Pointer Events disponíveis; o navegador reporta '+points+' ponto(s) de toque.':coarse?'Ponteiro principal é touch.':'A API está disponível, mas este navegador não reporta tela touch.',{maxTouchPoints:points,coarsePointer:coarse});
+}
+function testGamepad(){
+  if(!navigator.getGamepads)return result('warn','Gamepad API não está disponível.');
+  let connected=0;
+  try{connected=Array.from(navigator.getGamepads()).filter(Boolean).filter(g=>g.connected).length;}catch(e){}
+  return result('pass',connected?'Gamepad API disponível; '+connected+' controle(s) conectado(s).':'Gamepad API disponível. Nenhum controle está conectado neste momento.',{connected:connected});
+}
+async function testThreads(){
+  const workerAvailable=typeof Worker!=='undefined';
+  const shared=typeof SharedArrayBuffer!=='undefined';
+  const isolated=window.crossOriginIsolated===true;
+  let workerWorks=false;
+  if(workerAvailable&&typeof Blob!=='undefined'&&URL.createObjectURL){
+    let url;
+    try{
+      url=URL.createObjectURL(new Blob(['self.onmessage=function(e){self.postMessage(e.data+1)}'],{type:'text/javascript'}));
+      workerWorks=await new Promise(resolve=>{
+        let w;const timer=setTimeout(()=>{try{w?.terminate()}catch(e){}resolve(false)},1200);
+        try{w=new Worker(url);w.onmessage=()=>{clearTimeout(timer);w.terminate();resolve(true)};w.onerror=()=>{clearTimeout(timer);w.terminate();resolve(false)};w.postMessage(41);}catch(e){clearTimeout(timer);resolve(false);}
+      });
+    }catch(e){workerWorks=false;}finally{if(url)URL.revokeObjectURL(url);}
+  }
+  if(!workerAvailable||!workerWorks)return result('fail','Worker não conseguiu executar um teste de mensagem. Verifique as políticas do navegador.');
+  if(shared&&isolated)return result('pass','Worker funcional e SharedArrayBuffer disponível com cross-origin isolation. Bom pré-requisito para pthreads WASM.',{sharedArrayBuffer:true,crossOriginIsolated:true});
+  return result('warn','Worker funcional, mas SharedArrayBuffer/isolation está ausente. Emscripten pthreads exigiria cabeçalhos COOP/COEP e teste de compatibilidade.',{sharedArrayBuffer:shared,crossOriginIsolated:isolated});
+}
+function testNetwork(){
+  const fetchOk=typeof fetch==='function';
+  const wsOk=typeof WebSocket==='function';
+  if(!fetchOk)return result('fail','Fetch API não está disponível.');
+  return result(wsOk?'pass':'warn','Fetch '+(fetchOk?'disponível':'indisponível')+'; WebSocket '+(wsOk?'disponível':'indisponível')+'; navegador '+(navigator.onLine?'reporta online':'reporta offline')+'.',{fetch:fetchOk,webSocket:wsOk,online:navigator.onLine});
+}
+function statusLabel(status){return status==='pass'?'Disponível':status==='warn'?'Atenção':status==='fail'?'Falhou':'Pendente';}
+function render(){
+  const entries=definitions.map(d=>({definition:d,data:state.tests[d.id]||result('loading','Aguardando teste...')}));
+  $('results').innerHTML=entries.map(item=>{
+    const d=item.definition,r=item.data;
+    const safeDetail=String(r.detail||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return '<article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">'+d.icon+'</span>'+d.name+'</div><span class="status '+r.status+'">'+statusLabel(r.status)+'</span></div><p class="detail">'+safeDetail+'</p></article>';
+  }).join('');
+  const vals=Object.values(state.tests),pass=vals.filter(x=>x.status==='pass').length,warn=vals.filter(x=>x.status==='warn').length,fail=vals.filter(x=>x.status==='fail').length;
+  $('pass-count').textContent=pass;$('warn-count').textContent=warn;$('fail-count').textContent=fail;
+  const complete=vals.length===definitions.length;
+  $('overall').textContent=complete?(fail?'Parcial':warn?'Compatível*':'Bom sinal'):'…';
+  $('overall-note').textContent=complete?'*Compatibilidade do navegador, não do jogo original.': 'Executando '+vals.length+' de '+definitions.length+' testes';
+  $('copy').disabled=!complete;$('download').disabled=!complete;
+}
+function deviceProfile(){
+  const ua=navigator.userAgent||'';
+  let browser='Não identificado';
+  if(/Edg\//.test(ua))browser='Microsoft Edge';
+  else if(/Firefox\//.test(ua))browser='Firefox';
+  else if(/Chrome\//.test(ua))browser='Chrome/Chromium';
+  else if(/Safari\//.test(ua))browser='Safari/WebKit';
+  let os='Não identificado';
+  if(/Android/i.test(ua))os='Android';
+  else if(/iPhone|iPad|iPod/i.test(ua))os='iOS/iPadOS';
+  else if(/Windows/i.test(ua))os='Windows';
+  else if(/Mac OS/i.test(ua))os='macOS';
+  else if(/Linux/i.test(ua))os='Linux';
+  const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection;
+  return {
+    'Navegador':browser,
+    'Sistema':os,
+    'Núcleos lógicos':navigator.hardwareConcurrency||'Oculto',
+    'Memória estimada':navigator.deviceMemory?(navigator.deviceMemory+' GB (aprox.)'):'Oculta pelo navegador',
+    'Resolução CSS':innerWidth+' × '+innerHeight,
+    'Pixel ratio':window.devicePixelRatio||1,
+    'Conexão':c?((c.effectiveType||'tipo oculto')+(c.downlink?' · '+c.downlink+' Mbps':'')):(navigator.onLine?'Online · tipo não informado':'Offline'),
+    'Contexto seguro':window.isSecureContext?'Sim (HTTPS/localhost)':'Não'
+  };
+}
+function renderDevice(){
+  state.device=deviceProfile();
+  $('device-grid').innerHTML=Object.entries(state.device).map(([k,v])=>'<div class="device-item"><span>'+k+'</span><strong>'+String(v).replace(/</g,'&lt;')+'</strong></div>').join('');
+}
+async function runAll(){
+  const button=$('run');button.disabled=true;button.textContent='Testando…';
+  $('runstate').textContent='Executando testes locais…';
+  state.tests={};state.timestamp=new Date().toISOString();render();renderDevice();
+  for(const d of definitions){
+    state.tests[d.id]=result('loading','Verificando…');render();
+    try{state.tests[d.id]=await d.run();}catch(e){state.tests[d.id]=result('fail','Erro inesperado: '+(e.message||String(e)));}
+    render();
+  }
+  $('tested-at').textContent=new Date().toLocaleString('pt-BR');
+  $('runstate').textContent='Diagnóstico concluído neste aparelho';
+  button.disabled=false;button.textContent='↻ Executar novamente';
+}
+function report(){
+  return {
+    product:'Minecraft WebLab Web Platform Probe',
+    version:'0.2.0',
+    generatedAt:state.timestamp,
+    privacy:'Os resultados são montados localmente. Esta página não envia os dados do aparelho a um servidor.',
+    device:state.device,
+    tests:state.tests,
+    note:'Este relatório mede APIs do navegador. Não demonstra que o Minecraft Bedrock original já foi portado para WebAssembly.'
+  };
+}
+$('run').addEventListener('click',runAll);
+$('copy').addEventListener('click',async()=>{
+  try{await navigator.clipboard.writeText(JSON.stringify(report(),null,2));$('copy').textContent='Copiado ✓';}
+  catch(e){$('copy').textContent='Clipboard bloqueado';}
+  setTimeout(()=>$('copy').textContent='Copiar relatório',1800);
+});
+$('download').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(report(),null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='minecraft-weblab-diagnostico.json';a.click();URL.revokeObjectURL(url);
+});
+document.addEventListener('click',async function soundUnlock(e){
+  if(e.target.id!=='sound-test')return;
+});
+window.addEventListener('resize',renderDevice);
+renderDevice();
+runAll();
+})();
+</script>
+</body>
+</html>
