@@ -59,7 +59,7 @@ async function startEngine(pack) {
     const registry = createBedrockRegistry(pack.index);
     setStatus(`Preparando atlas: ${registry.stats.materialCount} materiais…`);
     renderer = new WebGL2Renderer(canvas, { maxPixelRatio: 1.5 });
-    const atlas = await buildTextureAtlas(pack, registry, renderer.gl, { maxTextureEdge: 128, padding: 2 });
+    const atlas = await buildTextureAtlas(pack, registry, renderer.gl, { maxTextureEdge: 64, padding: 1 });
     renderer.setAtlas(atlas);
     setStatus("Gerando chunks e superfícies visíveis…");
     const world = createDemoWorld(registry, { radius: 2, height: 64, seed: 26060 });

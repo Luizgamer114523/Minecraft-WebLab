@@ -176,9 +176,11 @@ function packShelves(items, maxSize, padding) {
   throw new Error("O atlas excede o limite de textura desta GPU. Reduza a qualidade do pacote.");
 }
 
-export async function buildTextureAtlas(pack, registry, gl, { maxTextureEdge = 128, padding = 2 } = {}) {
-  const maxSize = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE) || 2048, 4096);
+export async function buildTextureAtlas(pack, registry, gl, { maxTextureEdge = 64, padding = 1 } = {}) {
+  // Mobile-safe ceiling: a 2048² RGBA atlas is ~16 MiB, versus ~64 MiB at 4096².
+  const maxSize = Math.min(gl.getParameter(gl.MAX_TEXTURE_SIZE) || 2048, 2048);
   const sources = new Map(), sourceByMaterial = new Map(), fallbackByMaterial = new Map();
+
   for (const material of registry.materials) {
     const override = pack.getOverrideFile?.(material.alias);
     const baseKey = material.file ? `base:${material.file}` : null;
@@ -192,51 +194,91 @@ export async function buildTextureAtlas(pack, registry, gl, { maxTextureEdge = 1
       sourceByMaterial.set(material.id, baseKey);
     }
   }
-  const decoded = [], failures = [];
+
+  // First pass reads only image headers. No decoded bitmap is retained in memory.
+  const layoutItems = [], failures = [];
   for (const source of sources.values()) {
     try {
       const blob = source.blob || await getPackBlob(pack, source.path);
       if (!blob) throw new Error("arquivo ausente");
-      const image = await decodeImage(blob, source.path, maxTextureEdge);
-      const width = Math.max(1, image.width || image.naturalWidth || 1);
-      const height = Math.max(1, image.height || image.naturalHeight || 1);
-      const scale = Math.min(1, maxTextureEdge / Math.max(width, height));
-      decoded.push({
-        key: source.key, image,
-        width: Math.max(1, Math.round(width * scale)),
-        height: Math.max(1, Math.round(height * scale))
+      if (blob.size > 24 * 1024 * 1024) throw new Error("arquivo excede 24 MiB");
+      const dimensions = await readImageDimensions(blob, source.path);
+      const scale = Math.min(1, maxTextureEdge / Math.max(dimensions.width, dimensions.height));
+      layoutItems.push({
+        key: source.key,
+        path: source.path,
+        blob,
+        width: Math.max(1, Math.round(dimensions.width * scale)),
+        height: Math.max(1, Math.round(dimensions.height * scale))
       });
-    } catch (error) { failures.push({ path: source.path, reason: error.message }); }
+    } catch (error) {
+      failures.push({ path: source.path, reason: error.message });
+    }
   }
-  const missing = createMissingTexture(), missingKey = sourceByMaterial.get(0);
-  if (!missingKey || !decoded.some((item) => item.key === missingKey)) {
-    decoded.unshift({ key: "__weblab_missing__", image: missing, width: 16, height: 16 });
+
+  const missingKey = sourceByMaterial.get(0);
+  if (!layoutItems.some((item) => item.key === missingKey)) {
+    layoutItems.unshift({
+      key: "__weblab_missing__",
+      path: "__weblab_missing__",
+      blob: null,
+      width: 16,
+      height: 16,
+      missing: true
+    });
   }
-  const layout = packShelves(decoded, maxSize, padding);
+
+  const layout = packShelves(layoutItems, maxSize, padding);
   const canvas = document.createElement("canvas");
-  canvas.width = layout.width; canvas.height = layout.height;
+  canvas.width = layout.width;
+  canvas.height = layout.height;
   const context = canvas.getContext("2d", { alpha: true });
+  if (!context) throw new Error("Não foi possível criar o canvas do atlas.");
   context.imageSmoothingEnabled = false;
-  for (const item of decoded) {
-    context.drawImage(item.image, item.x - padding, item.y - padding, item.width + padding * 2, item.height + padding * 2);
-    context.drawImage(item.image, item.x, item.y, item.width, item.height);
-  }
   const rectByKey = new Map();
-  for (const item of decoded) rectByKey.set(item.key, [
-    item.x / layout.width,
-    1 - (item.y + item.height) / layout.height,
-    item.width / layout.width,
-    item.height / layout.height
-  ]);
-  const missingRect = rectByKey.get(missingKey) || rectByKey.get(fallbackByMaterial.get(0)) || rectByKey.get("__weblab_missing__") || [0, 0, 1, 1];
+  let loadedTextures = 0;
+
+  // Second pass decodes one image at a time, draws it, then releases its bitmap.
+  for (const item of layoutItems) {
+    try {
+      const image = item.missing ? createMissingTexture() : await decodeImage(item.blob, item.path, maxTextureEdge);
+      context.drawImage(image, item.x - padding, item.y - padding, item.width + padding * 2, item.height + padding * 2);
+      context.drawImage(image, item.x, item.y, item.width, item.height);
+      image.close?.();
+      rectByKey.set(item.key, [
+        item.x / layout.width,
+        1 - (item.y + item.height) / layout.height,
+        item.width / layout.width,
+        item.height / layout.height
+      ]);
+      loadedTextures++;
+    } catch (error) {
+      failures.push({ path: item.path, reason: error.message });
+    }
+  }
+
+  const missingRect = rectByKey.get(missingKey)
+    || rectByKey.get(fallbackByMaterial.get(0))
+    || rectByKey.get("__weblab_missing__")
+    || [0, 0, 1, 1];
   const rects = new Float32Array(registry.materials.length * 4);
   for (const material of registry.materials) {
-    rects.set(rectByKey.get(sourceByMaterial.get(material.id)) || rectByKey.get(fallbackByMaterial.get(material.id)) || missingRect, material.id * 4);
+    rects.set(
+      rectByKey.get(sourceByMaterial.get(material.id))
+        || rectByKey.get(fallbackByMaterial.get(material.id))
+        || missingRect,
+      material.id * 4
+    );
   }
+
   return {
-    canvas, rects, width: layout.width, height: layout.height,
-    loadedTextures: decoded.length,
+    canvas,
+    rects,
+    width: layout.width,
+    height: layout.height,
+    loadedTextures,
     overriddenTextures: [...sourceByMaterial.entries()].filter(([id, key]) => key.startsWith("override:") && rectByKey.has(key)).length,
-    failedTextures: failures.length, failures
+    failedTextures: failures.length,
+    failures
   };
 }
