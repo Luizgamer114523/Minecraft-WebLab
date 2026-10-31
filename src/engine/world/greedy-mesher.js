@@ -46,7 +46,7 @@ export function buildGreedyMesh(
           if (sample(...neighbor)) continue;
           const materialId = getFaceMaterialId(blockId, normal);
           if (!Number.isInteger(materialId) || materialId < 0 || materialId > 65535) {
-            throw new RangeError(\`Invalid face material ID: \${materialId}\`);
+            throw new RangeError(`Invalid face material ID: ${materialId}`);
           }
           mask[u + v * width] = ((blockId << 16) | materialId) >>> 0;
         }

@@ -54,7 +54,7 @@ export function createBedrockRegistry(index) {
   function getFaceMaterialId(blockId, normal) {
     const block = blocks[blockId];
     if (!block) return 0;
-    const candidates = FACE_BY_NORMAL.get(\`\${normal[0]},\${normal[1]},\${normal[2]}\`) || ["all"];
+    const candidates = FACE_BY_NORMAL.get(`${normal[0]},${normal[1]},${normal[2]}`) || ["all"];
     for (const face of candidates) {
       const alias = block.faces?.[face];
       if (typeof alias === "string") return aliasToMaterialId.get(alias) ?? 0;

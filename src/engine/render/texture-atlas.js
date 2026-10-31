@@ -11,9 +11,9 @@ async function decodeTga(blob) {
   const width = view.getUint16(12, true), height = view.getUint16(14, true);
   const bits = bytes[16], descriptor = bytes[17];
   if (colorMapType !== 0 || !width || !height) throw new Error("TGA com color map ou dimensões inválidas não é suportado");
-  if (![2, 3, 10, 11].includes(imageType)) throw new Error(\`Tipo TGA não suportado: \${imageType}\`);
+  if (![2, 3, 10, 11].includes(imageType)) throw new Error(`Tipo TGA não suportado: ${imageType}`);
   if (![8, 24, 32].includes(bits) || ((imageType === 3 || imageType === 11) && bits !== 8)) {
-    throw new Error(\`Profundidade TGA não suportada: \${bits}\`);
+    throw new Error(`Profundidade TGA não suportada: ${bits}`);
   }
   const bytesPerPixel = bits >> 3;
   let cursor = 18 + idLength;
@@ -107,11 +107,11 @@ export async function buildTextureAtlas(pack, registry, gl, { maxTextureEdge = 1
   for (const material of registry.materials) {
     const override = pack.getOverrideFile?.(material.alias);
     if (override) {
-      const key = \`override:\${override.name}:\${override.size}\`;
+      const key = `override:${override.name}:${override.size}`;
       sources.set(key, { key, path: override.name, blob: override });
       sourceByMaterial.set(material.id, key);
     } else if (material.file) {
-      const key = \`base:\${material.file}\`;
+      const key = `base:${material.file}`;
       sources.set(key, { key, path: material.file, blob: null });
       sourceByMaterial.set(material.id, key);
     }

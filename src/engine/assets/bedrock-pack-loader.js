@@ -35,7 +35,7 @@ function flattenTexturePaths(value) {
 async function readOptional(file) {
   if (!file) return null;
   try { return JSON.parse(cleanJson(await file.text())); }
-  catch (error) { throw new Error(\`JSON inválido em \${file.name}: \${error.message}\`); }
+  catch (error) { throw new Error(`JSON inválido em ${file.name}: ${error.message}`); }
 }
 function parseBlockFaces(definition) {
   const source = definition?.textures;
@@ -77,12 +77,12 @@ async function expandZipArchive(zipFile) {
     }
     const safeName = normalizePath(name);
     if (!safeName || safeName.endsWith("/")) continue;
-    if ((flags & 1) !== 0) throw new Error(\`ZIP protegido por senha não é suportado: \${safeName}\`);
-    if (expandedSize > 24 * 1024 * 1024) throw new Error(\`Arquivo muito grande dentro do ZIP: \${safeName}\`);
+    if ((flags & 1) !== 0) throw new Error(`ZIP protegido por senha não é suportado: ${safeName}`);
+    if (expandedSize > 24 * 1024 * 1024) throw new Error(`Arquivo muito grande dentro do ZIP: ${safeName}`);
     totalExpanded += expandedSize;
     if (totalExpanded > 180 * 1024 * 1024) throw new Error("ZIP excede o limite de 180 MiB descompactados.");
-    if (![0, 8].includes(method)) throw new Error(\`Método de compactação ZIP não suportado (\${method}): \${safeName}\`);
-    if (view.getUint32(localOffset, true) !== 0x04034b50) throw new Error(\`Cabeçalho local inválido: \${safeName}\`);
+    if (![0, 8].includes(method)) throw new Error(`Método de compactação ZIP não suportado (${method}): ${safeName}`);
+    if (view.getUint32(localOffset, true) !== 0x04034b50) throw new Error(`Cabeçalho local inválido: ${safeName}`);
     const localNameLength = view.getUint16(localOffset + 26, true);
     const localExtraLength = view.getUint16(localOffset + 28, true);
     const payloadStart = localOffset + 30 + localNameLength + localExtraLength;
@@ -94,7 +94,7 @@ async function expandZipArchive(zipFile) {
       const stream = new Blob([compressed]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
       blob = await new Response(stream).blob();
     }
-    if (blob.size !== expandedSize) throw new Error(\`Tamanho descompactado inesperado: \${safeName}\`);
+    if (blob.size !== expandedSize) throw new Error(`Tamanho descompactado inesperado: ${safeName}`);
     const file = new File([blob], safeName.split("/").pop(), { type: "application/octet-stream" });
     Object.defineProperty(file, "webkitRelativePath", { value: safeName });
     output.push(file);
@@ -106,15 +106,15 @@ function makeFileIndex(files) {
   return [...files].map((file) => ({ file, path: normalizePath(file.webkitRelativePath || file.name) }));
 }
 function findRoot(entries, marker) {
-  const entry = entries.find((item) => item.path.endsWith(\`/\${marker}\`) || item.path === marker);
+  const entry = entries.find((item) => item.path.endsWith(`/${marker}`) || item.path === marker);
   if (!entry) return null;
   return entry.path.slice(0, entry.path.length - marker.length);
 }
 function findFile(entries, root, relativePath) {
   const clean = normalizePath(relativePath);
   if (!clean || clean.startsWith("/") || clean.split("/").includes("..")) return null;
-  const exact = entries.find((item) => item.path === \`\${root}\${clean}\` || item.path === clean);
-  return exact?.file || entries.find((item) => item.path.endsWith(\`/\${clean}\`))?.file || null;
+  const exact = entries.find((item) => item.path === `${root}${clean}` || item.path === clean);
+  return exact?.file || entries.find((item) => item.path.endsWith(`/${clean}`))?.file || null;
 }
 
 async function makeIndexFromResourcePack(entries, root) {
@@ -192,11 +192,11 @@ export async function loadTextureOverridesFromZip(zipFile) {
 }
 
 export async function loadHostedBedrockPack(baseUrl = "/bedrock-assets/") {
-  const response = await fetch(\`\${baseUrl}bedrock-resource-index.json\`, { cache: "no-cache" });
+  const response = await fetch(`${baseUrl}bedrock-resource-index.json`, { cache: "no-cache" });
   if (!response.ok) return null;
   const index = await response.json();
   const getFile = async (relativePath) => {
-    const result = await fetch(\`\${baseUrl}\${normalizePath(relativePath)}\`);
+    const result = await fetch(`${baseUrl}${normalizePath(relativePath)}`);
     return result.ok ? await result.blob() : null;
   };
   return { index, getFile, root: baseUrl, fileCount: null };

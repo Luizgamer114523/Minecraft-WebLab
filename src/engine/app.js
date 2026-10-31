@@ -26,10 +26,10 @@ function showError(error) {
   setStatus("Não foi possível carregar o pacote.", "error");
 }
 function updateStats(stats, fps) {
-  $("stat-fps").textContent = \`\${fps} FPS\`;
-  $("stat-chunks").textContent = \`\${renderer.chunks.length} chunks\`;
-  $("stat-quads").textContent = \`\${stats.quads.toLocaleString("pt-BR")} quads\`;
-  $("stat-draws").textContent = \`\${stats.drawCalls} draws\`;
+  $("stat-fps").textContent = `${fps} FPS`;
+  $("stat-chunks").textContent = `${renderer.chunks.length} chunks`;
+  $("stat-quads").textContent = `${stats.quads.toLocaleString("pt-BR")} quads`;
+  $("stat-draws").textContent = `${stats.drawCalls} draws`;
 }
 
 async function startEngine(pack) {
@@ -49,7 +49,7 @@ async function startEngine(pack) {
     if (!probe) throw new Error("Este navegador não oferece WebGL 2. Ative a aceleração de hardware ou use uma versão atual do Chrome.");
     const gpuLimit = probe.getParameter(probe.MAX_TEXTURE_SIZE);
     const registry = createBedrockRegistry(pack.index);
-    setStatus(\`Preparando atlas: \${registry.stats.materialCount} materiais…\`);
+    setStatus(`Preparando atlas: ${registry.stats.materialCount} materiais…`);
     renderer = new WebGL2Renderer(canvas, { maxPixelRatio: 1.5 });
     const atlas = await buildTextureAtlas(pack, registry, renderer.gl, { maxTextureEdge: 128, padding: 2 });
     renderer.setAtlas(atlas);
@@ -65,15 +65,15 @@ async function startEngine(pack) {
     engineStarted = true;
     loading.classList.add("hidden");
     hud.hidden = false;
-    $("world-label").textContent = \`Bedrock resource pack · \${registry.stats.blockCount} blocos\`;
-    $("asset-label").textContent = \`\${atlas.loadedTextures} texturas carregadas\${atlas.overriddenTextures ? \` · \${atlas.overriddenTextures} overrides 512px\` : ""}\${atlas.failedTextures ? \` · \${atlas.failedTextures} falhas\` : ""}\`;
-    $("engine-label").textContent = \`WebGL 2 · atlas \${atlas.width}×\${atlas.height} · limite GPU \${gpuLimit}\`;
-    $("mesh-label").textContent = \`\${world.chunks.length} chunks · \${totalQuads.toLocaleString("pt-BR")} faces após greedy meshing\`;
+    $("world-label").textContent = `Bedrock resource pack · ${registry.stats.blockCount} blocos`;
+    $("asset-label").textContent = `${atlas.loadedTextures} texturas carregadas${atlas.overriddenTextures ? ` · ${atlas.overriddenTextures} overrides 512px` : ""}${atlas.failedTextures ? ` · ${atlas.failedTextures} falhas` : ""}`;
+    $("engine-label").textContent = `WebGL 2 · atlas ${atlas.width}×${atlas.height} · limite GPU ${gpuLimit}`;
+    $("mesh-label").textContent = `${world.chunks.length} chunks · ${totalQuads.toLocaleString("pt-BR")} faces após greedy meshing`;
     $("pack-info").textContent = pack.index.source?.game_version
-      ? \`Recursos detectados: Minecraft Bedrock \${pack.index.source.game_version}\`
+      ? `Recursos detectados: Minecraft Bedrock ${pack.index.source.game_version}`
       : "Recursos carregados de um pacote Bedrock local";
     const missingRefs = pack.index.stats?.unresolved_texture_references;
-    $("quality-note").textContent = \`\${atlas.failedTextures} textura(s) não decodificada(s) · \${missingRefs ?? "n/d"} referência(s) pendente(s) no índice.\`;
+    $("quality-note").textContent = `${atlas.failedTextures} textura(s) não decodificada(s) · ${missingRefs ?? "n/d"} referência(s) pendente(s) no índice.`;
     setStatus("Motor iniciado com recursos locais.", "success");
     lastFrame = performance.now(); fpsStarted = lastFrame; fpsFrames = 0;
     const frame = (now) => {
@@ -100,7 +100,7 @@ fileInput.addEventListener("change", async () => {
   const files = fileInput.files;
   if (!files?.length) return;
   try {
-    setStatus(\`\${files.length.toLocaleString("pt-BR")} arquivos selecionados. Lendo pacote…\`);
+    setStatus(`${files.length.toLocaleString("pt-BR")} arquivos selecionados. Lendo pacote…`);
     await startEngine(await loadBedrockPackFromFiles(files));
   } catch (error) { showError(error); }
 });
@@ -125,7 +125,7 @@ overrideInput.addEventListener("change", async () => {
       currentPack.getOverrideFile = textureOverrides.getOverrideFile;
       await startEngine(currentPack);
     } else {
-      setStatus(\`\${textureOverrides.count} texturas 512px indexadas. Agora selecione a pasta Bedrock.\`, "success");
+      setStatus(`${textureOverrides.count} texturas 512px indexadas. Agora selecione a pasta Bedrock.`, "success");
     }
   } catch (error) { showError(error); }
 });

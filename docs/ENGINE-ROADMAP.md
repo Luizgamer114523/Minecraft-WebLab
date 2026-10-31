@@ -9,7 +9,7 @@ O WebLab usa um renderer voxel próprio para navegador. Ele não é uma convers�
 - WebGL 2 como backend mínimo; WebGPU pode ser avaliado depois.
 - Chunks em buffers tipados, sem um objeto 3D por bloco.
 - Greedy meshing com merge condicionado ao material de cada face.
-- Atlas local derivado de \`bedrock-resource-index.json\` ou de um Resource Pack.
+- Atlas local derivado de `bedrock-resource-index.json` ou de um Resource Pack.
 - Recursos proprietários continuam locais; APK, biblioteca nativa e texturas comerciais não entram no Git público.
 
 ## Etapas

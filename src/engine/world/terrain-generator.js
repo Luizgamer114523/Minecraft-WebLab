@@ -43,7 +43,7 @@ export function createDemoWorld(registry, { radius = 2, height = 64, seed = 2606
   }
 
   const chunks = new Map();
-  const key = (cx, cz) => \`\${cx},\${cz}\`;
+  const key = (cx, cz) => `${cx},${cz}`;
   for (let cz = -radius; cz < radius; cz++) {
     for (let cx = -radius; cx < radius; cx++) {
       chunks.set(key(cx, cz), new Chunk({ x: cx, z: cz, height }));

@@ -31,7 +31,7 @@ test("A single voxel produces six correctly wound quads", () => {
     const ac = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
     const cross = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
     const normal = mesh.normals.slice(offset, offset + 3);
-    assert.ok(cross[0] * normal[0] + cross[1] * normal[1] + cross[2] * normal[2] > 0, \`face \${face} winding\`);
+    assert.ok(cross[0] * normal[0] + cross[1] * normal[1] + cross[2] * normal[2] > 0, `face ${face} winding`);
   }
 });
 

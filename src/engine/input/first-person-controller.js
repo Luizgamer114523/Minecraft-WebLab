@@ -65,7 +65,7 @@ export class FirstPersonController {
         const length = Math.max(1, Math.hypot(dx, dy)), scale = Math.min(1, radius / length);
         this.joystick.x = dx * scale / radius;
         this.joystick.y = dy * scale / radius;
-        stick.style.transform = \`translate(\${this.joystick.x * radius}px, \${this.joystick.y * radius}px)\`;
+        stick.style.transform = `translate(${this.joystick.x * radius}px, ${this.joystick.y * radius}px)`;
       };
       joystick.addEventListener("touchstart", (event) => {
         event.preventDefault(); activeId = event.changedTouches[0].identifier; update(event.changedTouches[0]);

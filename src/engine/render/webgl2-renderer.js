@@ -1,6 +1,6 @@
 import { mat4LookAt, mat4Multiply, mat4Perspective } from "../math.js";
 
-const VERTEX_SHADER = \`#version 300 es
+const VERTEX_SHADER = `#version 300 es
 precision highp float;
 in vec3 aPosition;
 in vec3 aNormal;
@@ -22,9 +22,9 @@ void main() {
   float faceAmbient = aNormal.y > 0.5 ? 1.0 : (aNormal.y < -0.5 ? 0.57 : 0.79);
   vLight = faceAmbient * (0.69 + directional * 0.31);
   vFogDistance = distance(worldPosition, uCameraPosition);
-}\`;
+}`;
 
-const FRAGMENT_SHADER = \`#version 300 es
+const FRAGMENT_SHADER = `#version 300 es
 precision highp float;
 uniform sampler2D uAtlas;
 uniform vec3 uFogColor;
@@ -43,7 +43,7 @@ void main() {
   vec3 lit = texel.rgb * vLight;
   float fog = smoothstep(uFogNear, uFogFar, vFogDistance);
   outColor = vec4(mix(lit, uFogColor, fog), 1.0);
-}\`;
+}`;
 
 function compileShader(gl, type, source) {
   const shader = gl.createShader(type);
@@ -52,7 +52,7 @@ function compileShader(gl, type, source) {
   if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
     const message = gl.getShaderInfoLog(shader) || "Erro desconhecido no shader";
     gl.deleteShader(shader);
-    throw new Error(\`Falha ao compilar shader: \${message}\`);
+    throw new Error(`Falha ao compilar shader: ${message}`);
   }
   return shader;
 }
@@ -72,7 +72,7 @@ function createProgram(gl) {
   if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
     const message = gl.getProgramInfoLog(program) || "Erro desconhecido ao vincular shaders";
     gl.deleteProgram(program);
-    throw new Error(\`Falha ao vincular programa WebGL2: \${message}\`);
+    throw new Error(`Falha ao vincular programa WebGL2: ${message}`);
   }
   return program;
 }
