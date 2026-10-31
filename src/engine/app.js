@@ -1,4 +1,4 @@
-import { loadHostedBedrockPack } from "./assets/bedrock-pack-loader.js";
+import { loadHostedBedrockPack, loadBedrockPackFromFiles } from "./assets/bedrock-pack-loader.js";
 import { createDemoBedrockPack } from "./assets/demo-pack.js";
 import { FirstPersonController } from "./input/first-person-controller.js";
 import { buildTextureAtlas } from "./render/texture-atlas.js";
