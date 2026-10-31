@@ -18,6 +18,7 @@ async function decodeTga(blob) {
   const bytesPerPixel = bits >> 3;
   let cursor = 18 + idLength;
   const pixelCount = width * height;
+  if (width > 8192 || height > 8192 || pixelCount > 4_194_304) throw new Error('TGA excede o limite seguro de 4 megapixels.');
   const rgba = new Uint8ClampedArray(pixelCount * 4);
   const topOrigin = Boolean(descriptor & 0x20), rightOrigin = Boolean(descriptor & 0x10);
   let written = 0;
@@ -62,16 +63,90 @@ async function decodeTga(blob) {
   return canvas;
 }
 
-async function decodeImage(blob, path) {
-  if (/\.tga$/i.test(path)) return decodeTga(blob);
-  if (typeof createImageBitmap === "function") return createImageBitmap(blob);
+async function readImageDimensions(blob, path) {
+  const bytes = new Uint8Array(await blob.slice(0, 1024 * 1024).arrayBuffer());
+  let width = 0, height = 0;
+  const u32be = (offset) => bytes[offset] * 0x1000000 + (bytes[offset + 1] << 16) + (bytes[offset + 2] << 8) + bytes[offset + 3];
+  const u16be = (offset) => (bytes[offset] << 8) | bytes[offset + 1];
+  if (/\.tga$/i.test(path)) {
+    if (bytes.length < 18) throw new Error('TGA truncado');
+    width = bytes[12] | (bytes[13] << 8); height = bytes[14] | (bytes[15] << 8);
+  } else if (bytes.length >= 24 && bytes[0] === 137 && bytes[1] === 80 && bytes[2] === 78 && bytes[3] === 71) {
+    width = u32be(16); height = u32be(20);
+  } else if (bytes.length >= 30 && String.fromCharCode(...bytes.subarray(0, 4)) === 'RIFF' && String.fromCharCode(...bytes.subarray(8, 12)) === 'WEBP') {
+    let offset = 12;
+    while (offset + 8 <= bytes.length) {
+      const kind = String.fromCharCode(...bytes.subarray(offset, offset + 4));
+      const size = bytes[offset + 4] | (bytes[offset + 5] << 8) | (bytes[offset + 6] << 16) | (bytes[offset + 7] << 24);
+      const data = offset + 8;
+      if (kind === 'VP8X' && data + 10 <= bytes.length) {
+        width = 1 + bytes[data + 4] + (bytes[data + 5] << 8) + (bytes[data + 6] << 16);
+        height = 1 + bytes[data + 7] + (bytes[data + 8] << 8) + (bytes[data + 9] << 16); break;
+      }
+      if (kind === 'VP8L' && data + 5 <= bytes.length && bytes[data] === 0x2f) {
+        width = 1 + bytes[data + 1] + ((bytes[data + 2] & 0x3f) << 8);
+        height = 1 + ((bytes[data + 2] >> 6) & 3) + (bytes[data + 3] << 2) + ((bytes[data + 4] & 15) << 10); break;
+      }
+      if (kind === 'VP8 ' && data + 10 <= bytes.length && bytes[data + 3] === 0x9d && bytes[data + 4] === 1 && bytes[data + 5] === 0x2a) {
+        width = (bytes[data + 6] | (bytes[data + 7] << 8)) & 0x3fff;
+        height = (bytes[data + 8] | (bytes[data + 9] << 8)) & 0x3fff; break;
+      }
+      if (!size) break;
+      offset = data + size + (size & 1);
+    }
+  } else if (bytes.length >= 4 && bytes[0] === 0xff && bytes[1] === 0xd8) {
+    let offset = 2;
+    while (offset + 4 < bytes.length) {
+      if (bytes[offset] !== 0xff) { offset++; continue; }
+      while (bytes[offset] === 0xff) offset++;
+      const marker = bytes[offset++];
+      if (marker === 0xd8 || marker === 0xd9 || marker === 1 || (marker >= 0xd0 && marker <= 0xd7)) continue;
+      if (offset + 2 > bytes.length) break;
+      const length = u16be(offset);
+      if (length < 2 || offset + length > bytes.length) break;
+      if ([0xc0,0xc1,0xc2,0xc3,0xc5,0xc6,0xc7,0xc9,0xca,0xcb,0xcd,0xce,0xcf].includes(marker)) {
+        height = u16be(offset + 3); width = u16be(offset + 5); break;
+      }
+      offset += length;
+    }
+  }
+  if (!width || !height) throw new Error('Dimensões da imagem não reconhecidas.');
+  if (width > 8192 || height > 8192 || width * height > 4_194_304) throw new Error('Imagem excede o limite seguro de 4 megapixels.');
+  return { width, height };
+}
+
+async function decodeImage(blob, path, maxTextureEdge = 128) {
+  if (blob.size > 24 * 1024 * 1024) throw new Error('Textura excede 24 MiB.');
+  const dimensions = await readImageDimensions(blob, path);
+  const scale = Math.min(1, maxTextureEdge / Math.max(dimensions.width, dimensions.height));
+  const targetWidth = Math.max(1, Math.round(dimensions.width * scale));
+  const targetHeight = Math.max(1, Math.round(dimensions.height * scale));
+  if (/\.tga$/i.test(path)) {
+    const image = await decodeTga(blob);
+    if (scale >= 1) return image;
+    const canvas = document.createElement('canvas'); canvas.width = targetWidth; canvas.height = targetHeight;
+    const context = canvas.getContext('2d', { alpha: true }); context.imageSmoothingEnabled = false;
+    context.drawImage(image, 0, 0, targetWidth, targetHeight); return canvas;
+  }
+  if (typeof createImageBitmap === 'function') {
+    if (scale < 1) {
+      try { return await createImageBitmap(blob, { resizeWidth: targetWidth, resizeHeight: targetHeight, resizeQuality: 'pixelated' }); }
+      catch {
+        const image = await createImageBitmap(blob);
+        const canvas = document.createElement('canvas'); canvas.width = targetWidth; canvas.height = targetHeight;
+        const context = canvas.getContext('2d', { alpha: true }); context.imageSmoothingEnabled = false;
+        context.drawImage(image, 0, 0, targetWidth, targetHeight); image.close?.(); return canvas;
+      }
+    }
+    return await createImageBitmap(blob);
+  }
   const url = URL.createObjectURL(blob);
   try {
-    const image = new Image();
-    image.decoding = "async";
-    image.src = url;
-    await image.decode();
-    return image;
+    const image = new Image(); image.decoding = 'async'; image.src = url; await image.decode();
+    if (scale >= 1) return image;
+    const canvas = document.createElement('canvas'); canvas.width = targetWidth; canvas.height = targetHeight;
+    const context = canvas.getContext('2d', { alpha: true }); context.imageSmoothingEnabled = false;
+    context.drawImage(image, 0, 0, targetWidth, targetHeight); return canvas;
   } finally { URL.revokeObjectURL(url); }
 }
 function createMissingTexture() {
@@ -122,7 +197,7 @@ export async function buildTextureAtlas(pack, registry, gl, { maxTextureEdge = 1
     try {
       const blob = source.blob || await getPackBlob(pack, source.path);
       if (!blob) throw new Error("arquivo ausente");
-      const image = await decodeImage(blob, source.path);
+      const image = await decodeImage(blob, source.path, maxTextureEdge);
       const width = Math.max(1, image.width || image.naturalWidth || 1);
       const height = Math.max(1, image.height || image.naturalHeight || 1);
       const scale = Math.min(1, maxTextureEdge / Math.max(width, height));
