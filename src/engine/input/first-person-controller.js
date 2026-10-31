@@ -28,10 +28,12 @@ export class FirstPersonController {
       if (!this.pointerLocked && matchMedia("(pointer:fine)").matches) this.canvas.requestPointerLock?.();
     };
     this.onTouchStart = (event) => {
-      if (event.touches.length !== 1) return;
-      const touch = event.changedTouches[0];
-      if (touch.clientX < window.innerWidth * 0.48) return;
-      this.lookTouch = { id: touch.identifier, x: touch.clientX, y: touch.clientY };
+      if (this.lookTouch) return;
+      for (const touch of event.changedTouches) {
+        if (touch.clientX < window.innerWidth * 0.48) continue;
+        this.lookTouch = { id: touch.identifier, x: touch.clientX, y: touch.clientY };
+        break;
+      }
     };
     this.onTouchMove = (event) => {
       if (!this.lookTouch) return;
@@ -83,9 +85,13 @@ export class FirstPersonController {
     }
     const up = document.getElementById("move-up"), down = document.getElementById("move-down");
     up?.addEventListener("touchstart", (event) => { event.preventDefault(); this.keys.add("Space"); }, { passive: false });
-    up?.addEventListener("touchend", () => this.keys.delete("Space"));
+    const stopUp = () => this.keys.delete("Space");
+    up?.addEventListener("touchend", stopUp);
+    up?.addEventListener("touchcancel", stopUp);
     down?.addEventListener("touchstart", (event) => { event.preventDefault(); this.keys.add("KeyC"); }, { passive: false });
-    down?.addEventListener("touchend", () => this.keys.delete("KeyC"));
+    const stopDown = () => this.keys.delete("KeyC");
+    down?.addEventListener("touchend", stopDown);
+    down?.addEventListener("touchcancel", stopDown);
   }
 
   rotate(dx, dy) {
