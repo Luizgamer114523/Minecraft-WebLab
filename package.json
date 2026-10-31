@@ -1,14 +1,19 @@
 {
   "name": "minecraft-weblab",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
+    "test": "node --test && node --check api/bedrock-auth.js && node --check api/bedrock-assets.js",
     "prepare:bedrock-assets": "node tools/bedrock/prepare-web-assets.mjs"
   },
   "devDependencies": {
     "vite": "^6.0.0"
+  },
+  "dependencies": {
+    "@vercel/blob": "^2.5.0"
   }
 }
