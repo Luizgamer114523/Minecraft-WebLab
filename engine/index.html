@@ -23,22 +23,19 @@
     <div class="import-card">
       <div class="import-icon">▧</div>
       <div>
-        <h2>Carregar recursos originais</h2>
-        <p>Configure o pacote uma única vez: selecione <strong>bedrock-assets-prepared.zip</strong> e informe a chave privada. O arquivo será guardado no Blob privado da Vercel; nas próximas visitas o motor carregará os recursos sozinho, sem pedir o ZIP novamente.</p>
+        <h2>Mundo procedural automático</h2>
+        <p>O WebLab carrega os recursos que já estiverem hospedados e gera o terreno por chunks ao redor do jogador. Nenhum ZIP ou pasta precisa ser selecionado no celular.</p>
+        <p>Quando o pacote Bedrock estiver disponível no servidor, ele será carregado automaticamente. Até lá, o modo de demonstração permite testar o motor.</p>
       </div>
-      <button id="open-archive" class="primary-button">Configurar pacote Bedrock privado (uma única vez)</button>
-      <button id="open-picker" class="secondary-button">Selecionar pasta do pacote (opção avançada)</button>
-      <button id="open-overrides" class="secondary-button">Adicionar ZIP de texturas 512px</button>
-      <button id="load-default" class="secondary-button">Procurar pacote já hospedado</button>
     </div>
     <div id="error-panel" class="error-panel" hidden></div>
     <div class="info-grid">
       <article><span>GPU detectada</span><strong id="gpu-info">Aguardando</strong></article>
       <article><span>Pipeline</span><strong>WebGL 2 · GLSL ES 3.00</strong></article>
       <article><span>Geometria</span><strong>Chunks + greedy meshing</strong></article>
-      <article><span>Conteúdo</span><strong>Sem APK ou assets no servidor</strong></article>
+      <article><span>Conteúdo</span><strong>Chunks procedurais + recursos hospedados</strong></article>
     </div>
-    <p class="legal-note">Este laboratório não executa o APK nem afirma ser o motor oficial Bedrock. Ele interpreta definições e texturas do pacote em um renderer web independente. O pacote fica no Blob privado da Vercel, protegido por autenticação, e não é publicado no GitHub nem em URLs públicas de arquivos.</p>
+    <p class="legal-note">Este laboratório não executa o APK nem afirma ser o motor oficial Bedrock. Ele usa um renderer WebGL2 independente, geração procedural e recursos Bedrock quando disponíveis no servidor.</p>
     <div class="panel-footer">
       <button id="back-home" class="text-button">← Voltar ao diagnóstico</button>
       <span>ENGINE CORE · v0.1.0</span>
@@ -50,7 +47,6 @@
       <div class="hud-brand"><span class="hud-dot"></span><div><strong>WEBLAB ENGINE</strong><small id="world-label">Carregando mundo…</small></div></div>
       <div class="hud-right">
         <div class="hud-metrics"><span id="stat-fps">0 FPS</span><span id="stat-chunks">0 chunks</span><span id="stat-quads">0 quads</span><span id="stat-draws">0 draws</span></div>
-        <button id="hud-open-overrides" class="hud-action" type="button">512px ▣</button>
       </div>
     </div>
     <div class="hud-bottom">
@@ -59,9 +55,6 @@
     </div>
   </aside>
 
-  <input id="pack-folder" type="file" webkitdirectory directory multiple accept=".json,.png,.tga,.jpg,.jpeg,.webp" hidden>
-  <input id="pack-archive" type="file" accept=".zip,application/zip" hidden>
-  <input id="texture-overrides" type="file" accept=".zip,application/zip" hidden>
   <div class="crosshair" aria-hidden="true"><i></i><b></b></div>
   <div id="joystick" class="joystick" aria-label="Controle de movimento"><div class="joystick-ring"></div><div id="joystick-stick" class="joystick-stick"></div></div>
   <div class="touch-actions"><button id="move-up" aria-label="Subir">↑</button><button id="move-down" aria-label="Descer">↓</button></div>
