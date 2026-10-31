@@ -15,6 +15,7 @@ const overrideInput = $("texture-overrides"), hud = $("hud");
 let renderer = null, controller = null, animationFrame = 0;
 let lastFrame = 0, fpsFrames = 0, fpsStarted = performance.now();
 let engineStarted = false, currentPack = null, textureOverrides = null;
+let engineStartQueue = Promise.resolve();
 
 function setStatus(message, kind = "info") {
   status.textContent = message;
@@ -31,6 +32,12 @@ function updateStats(stats, fps) {
   $("stat-chunks").textContent = `${renderer.chunks.length} chunks`;
   $("stat-quads").textContent = `${stats.quads.toLocaleString("pt-BR")} quads`;
   $("stat-draws").textContent = `${stats.drawCalls} draws`;
+}
+
+function queueEngineStart(pack) {
+  const pending = engineStartQueue.catch(() => {}).then(() => startEngine(pack));
+  engineStartQueue = pending.catch(() => {});
+  return pending;
 }
 
 async function startEngine(pack) {
@@ -102,7 +109,7 @@ fileInput.addEventListener("change", async () => {
   if (!files?.length) return;
   try {
     setStatus(`${files.length.toLocaleString("pt-BR")} arquivos selecionados. Lendo pacote…`);
-    await startEngine(await loadBedrockPackFromFiles(files));
+    await queueEngineStart(await loadBedrockPackFromFiles(files));
   } catch (error) { showError(error); }
 });
 $("load-default").addEventListener("click", async () => {
@@ -110,7 +117,7 @@ $("load-default").addEventListener("click", async () => {
     setStatus("Procurando recursos Bedrock publicados nesta instalação…");
     const pack = await loadHostedBedrockPack();
     if (!pack) throw new Error("Não há pacote Bedrock local no servidor. Use 'Selecionar pasta do pacote'. Os arquivos originais não são enviados ao GitHub.");
-    await startEngine(pack);
+    await queueEngineStart(pack);
   } catch (error) { showError(error); }
 });
 $("open-picker").addEventListener("click", () => fileInput.click());
@@ -124,7 +131,7 @@ overrideInput.addEventListener("change", async () => {
     textureOverrides = await loadTextureOverridesFromZip(overrideInput.files[0]);
     if (currentPack) {
       currentPack.getOverrideFile = textureOverrides.getOverrideFile;
-      await startEngine(currentPack);
+      await queueEngineStart(currentPack);
     } else {
       setStatus(`${textureOverrides.count} texturas 512px indexadas. Agora selecione a pasta Bedrock.`, "success");
     }
@@ -135,7 +142,7 @@ archiveInput.addEventListener("change", async () => {
   if (!archive) return;
   try {
     setStatus("Lendo e descompactando ZIP local…");
-    await startEngine(await loadBedrockPackFromFiles([archive]));
+    await queueEngineStart(await loadBedrockPackFromFiles([archive]));
     try {
       await saveLocalPackArchive(archive);
       setStatus("Pacote carregado e salvo neste navegador. Ele abrirá automaticamente nas próximas visitas.", "success");
@@ -159,7 +166,7 @@ $("back-home").addEventListener("click", () => { window.location.href = "/"; });
     });
     if (savedArchive) {
       try {
-        await startEngine(await loadBedrockPackFromFiles([savedArchive]));
+        await queueEngineStart(await loadBedrockPackFromFiles([savedArchive]));
         setStatus("Pacote Bedrock local restaurado automaticamente.", "success");
         return;
       } catch (error) {
@@ -169,7 +176,7 @@ $("back-home").addEventListener("click", () => { window.location.href = "/"; });
     }
     setStatus("Aguardando pacote Bedrock local.");
     const hostedPack = await loadHostedBedrockPack();
-    if (hostedPack) await startEngine(hostedPack);
+    if (hostedPack) await queueEngineStart(hostedPack);
   } catch (error) { showError(error); }
 })();
 
