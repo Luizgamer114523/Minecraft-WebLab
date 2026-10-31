@@ -80,3 +80,26 @@ O acoplamento Android está confirmado em nível de ABI, não apenas por metadad
 4. Áudio, entrada, threads, rede, armazenamento, autenticação e serviços Android/Xbox por implementações web autorizadas e compatíveis.
 
 **Conclusão atualizada:** o APK está íntegro e oferece uma base rica para engenharia reversa estática. A biblioteca principal ainda é um binário Android ARM64 fortemente dependente de APIs Android e não pode ser carregada diretamente no navegador. Os símbolos exportados ajudam a mapear componentes, mas não eliminam a necessidade de código-fonte/pipeline autorizado ou de um esforço de portabilidade de grande porte.
+
+
+## Correção do pacote de arquivos extraídos (31/10/2026)
+
+O usuário reenviou a pasta extraída como `tudo do Minecraft.7z`, substituindo o ZIP anterior que continha um arquivo ZIP aninhado com falha de descompressão.
+
+### Verificação integral do 7z
+- Tamanho compactado: 290.930.670 bytes.
+- 15.355 entradas no arquivo: 13.396 arquivos e 1.959 diretórios.
+- Total descompactado dos arquivos: 980.473.964 bytes.
+- Todas as entradas foram lidas integralmente pela biblioteca libarchive, sem erros de descompressão ou checksum.
+
+### Comparação com o APK original
+Foi feita comparação individual de todos os arquivos do 7z com as entradas do APK:
+- Arquivos no APK: 13.396.
+- Arquivos no 7z: 13.396.
+- Arquivos correspondentes: 13.396.
+- Arquivos ausentes: 0.
+- Arquivos extras: 0.
+- Diferenças de tamanho ou CRC32: 0.
+- Erros de leitura: 0.
+
+**Conclusão:** o novo arquivo 7z corresponde exatamente ao conteúdo extraído do APK enviado separadamente. Ele pode ser usado como cópia de análise confiável. A falha do ZIP antigo era consequência do ZIP aninhado e está resolvida pelo novo pacote. O APK original continua sendo a referência binária principal. Nenhum conteúdo comercial foi adicionado ao repositório.
