@@ -277,7 +277,7 @@ function render(){
   $('results').innerHTML=entries.map(item=>{
     const d=item.definition,r=item.data;
     const safeDetail=String(r.detail||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    return '<article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">'+d.icon+'</span>'+d.name+'</div><span class="status '+r.status+'">'+statusLabel(r.status)+'</span></div><p class="detail">'+safeDetail+'</p></article>';
+    return '<article class="card"><div class="card-top"><div class="card-title"><span class="card-icon">'+d.icon+'</span>'+d.name+'</div><span class="status '+r.status+'">'+statusLabel(r.status)+'</span></div><p class="detail">'+safeDetail+'</p>'+(d.id==='audio'?'<button class="btn inline-btn" data-action="sound">Testar saída de áudio</button>':'')+'</article>';
   }).join('');
   const vals=Object.values(state.tests),pass=vals.filter(x=>x.status==='pass').length,warn=vals.filter(x=>x.status==='warn').length,fail=vals.filter(x=>x.status==='fail').length;
   $('pass-count').textContent=pass;$('warn-count').textContent=warn;$('fail-count').textContent=fail;
@@ -340,6 +340,24 @@ function report(){
   };
 }
 $('run').addEventListener('click',runAll);
+$('results').addEventListener('click',async e=>{
+  const button=e.target.closest('[data-action="sound"]');
+  if(!button)return;
+  const Audio=window.AudioContext||window.webkitAudioContext;
+  if(!Audio){button.textContent='Áudio indisponível';return;}
+  try{
+    const ctx=new Audio();await ctx.resume();
+    const oscillator=ctx.createOscillator(),gain=ctx.createGain();
+    oscillator.type='sine';oscillator.frequency.value=660;
+    gain.gain.setValueAtTime(0.0001,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.07,ctx.currentTime+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001,ctx.currentTime+0.22);
+    oscillator.connect(gain);gain.connect(ctx.destination);
+    oscillator.start();oscillator.stop(ctx.currentTime+0.23);
+    button.textContent='Tom enviado ✓';
+    setTimeout(()=>ctx.close().catch(()=>{}),500);
+  }catch(error){button.textContent='Falha ao iniciar áudio';}
+});
 $('copy').addEventListener('click',async()=>{
   try{await navigator.clipboard.writeText(JSON.stringify(report(),null,2));$('copy').textContent='Copiado ✓';}
   catch(e){$('copy').textContent='Clipboard bloqueado';}
@@ -348,9 +366,6 @@ $('copy').addEventListener('click',async()=>{
 $('download').addEventListener('click',()=>{
   const blob=new Blob([JSON.stringify(report(),null,2)],{type:'application/json'});
   const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='minecraft-weblab-diagnostico.json';a.click();URL.revokeObjectURL(url);
-});
-document.addEventListener('click',async function soundUnlock(e){
-  if(e.target.id!=='sound-test')return;
 });
 window.addEventListener('resize',renderDevice);
 renderDevice();
