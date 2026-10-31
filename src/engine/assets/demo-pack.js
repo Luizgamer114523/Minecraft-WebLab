@@ -1,72 +1,12 @@
-const PALETTES = {
-  grass_top: ["#4d8f35", "#5b9e3d", "#3f7a2e", "#68a947"],
-  grass_side: ["#684b2d", "#735332", "#5a4028", "#4d8b35"],
-  dirt: ["#795333", "#6e492d", "#865d3b", "#60442b"],
-  stone: ["#7b7b7b", "#686868", "#898989", "#5c5c5c"],
-  bedrock: ["#474747", "#333333", "#5a5a5a", "#262626"],
-  log: ["#80572f", "#93683b", "#684728", "#a07846"],
-  leaves: ["#326d2e", "#3c7d35", "#245c27", "#4b873b"],
-  sand: ["#d9c58e", "#cbb47a", "#e4d29f", "#bda56e"],
-  sandstone: ["#b88d5a", "#c99d67", "#a97c4f", "#d2aa76"],
-  gravel: ["#77736c", "#918b82", "#615f5b", "#a19a8e"],
-  water: ["#347db5", "#3f91c9", "#286da7", "#65a9d3"],
-  snow: ["#e5edf0", "#ffffff", "#cdd9df", "#eef4f5"],
-  coal_ore: ["#777777", "#6b6b6b", "#353535", "#898989"],
-  iron_ore: ["#777777", "#6b6b6b", "#a46d4d", "#898989"],
-  gold_ore: ["#777777", "#6b6b6b", "#e0b52c", "#898989"],
-  diamond_ore: ["#777777", "#6b6b6b", "#41c9d8", "#898989"]
-};
-
-function hash(x, y, seed) {
-  let value = Math.imul(x + seed, 0x45d9f3b) ^ Math.imul(y - seed, 0x27d4eb2d);
-  value = Math.imul(value ^ (value >>> 15), 0x85ebca6b);
-  return (value ^ (value >>> 13)) >>> 0;
-}
-
-function makeTexture(alias) {
-  const colors = PALETTES[alias];
-  const canvas = document.createElement("canvas");
-  canvas.width = 16;
-  canvas.height = 16;
-  const context = canvas.getContext("2d", { alpha: false });
-  if (!context) throw new Error("Canvas 2D indisponível para gerar o pacote de demonstração.");
-
-  const pixels = new Uint8ClampedArray(16 * 16 * 4);
-  for (let y = 0; y < 16; y++) {
-    for (let x = 0; x < 16; x++) {
-      let paletteIndex = hash(x, y, alias.length) % colors.length;
-      if (alias === "grass_side" && y < 3) paletteIndex = hash(x, y, 7) % 2 ? 0 : 1;
-      if (alias === "log" && x > 5 && x < 10) paletteIndex = 1;
-      if (alias === "leaves" && hash(x, y, 13) % 7 === 0) paletteIndex = 3;
-      if (alias === "water") {
-        const waveIndex = y + Math.floor(Math.sin(x * 0.8) * 2) + hash(x, y, 17) % 2;
-        paletteIndex = ((waveIndex % colors.length) + colors.length) % colors.length;
-      }
-      if (alias.endsWith("_ore")) paletteIndex = hash(x, y, 31) % 6 === 0 ? 2 : hash(x, y, 19) % 3;
-
-      const hex = colors[paletteIndex].slice(1);
-      const index = (y * 16 + x) * 4;
-      pixels[index] = parseInt(hex.slice(0, 2), 16);
-      pixels[index + 1] = parseInt(hex.slice(2, 4), 16);
-      pixels[index + 2] = parseInt(hex.slice(4, 6), 16);
-      pixels[index + 3] = 255;
-    }
-  }
-  context.putImageData(new ImageData(pixels, 16, 16), 0, 0);
-
-  return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-      else reject(new Error("Não foi possível gerar uma textura de demonstração."));
-    }, "image/png");
-  });
-}
+import { DEMO_TEXTURES } from "./demo-textures.js";
 
 export async function createDemoBedrockPack() {
-  const aliases = Object.keys(PALETTES);
+  const aliases = Object.keys(DEMO_TEXTURES);
   const textures = new Map();
   for (const alias of aliases) {
-    textures.set(`demo/${alias}.png`, await makeTexture(alias));
+    const binary = atob(DEMO_TEXTURES[alias]);
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    textures.set(`demo/${alias}.png`, new Blob([bytes], { type: "image/png" }));
   }
 
   const textureIndex = Object.fromEntries(aliases.map((alias) => [
@@ -97,7 +37,7 @@ export async function createDemoBedrockPack() {
   return {
     index: {
       schema: "minecraft-weblab/demo-resource-index@1",
-      source: { resource_pack: "WebLab generated demo", game_version: "not-applicable", overlay: null },
+      source: { resource_pack: "WebLab user texture test pack", game_version: "texture-test", overlay: null },
       stats: { blocks: Object.keys(blocks).length, texture_keys: aliases.length, texture_references: aliases.length, unresolved_texture_references: 0 },
       blocks,
       textures: textureIndex
