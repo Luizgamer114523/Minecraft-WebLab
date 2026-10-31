@@ -211,7 +211,6 @@ $("back-home").addEventListener("click", () => { window.location.href = "/"; });
       throw new Error("A Vercel não conseguiu entregar o pacote privado (HTTP " + privateResponse.status + ").");
     }
 
-    setStatus("Pacote privado ainda não configurado. A importação inicial será feita uma única vez.");
     setStatus("Pacote privado não configurado. Tentando recursos já hospedados…");
     const hostedPack = await loadHostedBedrockPack();
     if (hostedPack) {
@@ -219,9 +218,9 @@ $("back-home").addEventListener("click", () => { window.location.href = "/"; });
       return;
     }
 
-    setStatus("Nenhum pacote privado foi configurado. Iniciando modo de demonstração leve…");
+    setStatus("Nenhum pacote Bedrock está hospedado ainda. Iniciando mundo procedural de demonstração…");
     await queueEngineStart(await createDemoBedrockPack());
-    setStatus("Modo de demonstração ativo. O teste funciona sem importar arquivos no celular.", "success");
+    setStatus("Mundo procedural ativo. Nenhum arquivo precisa ser enviado pelo aparelho.", "success");
   } catch (error) { showError(error); }
 })();
 
