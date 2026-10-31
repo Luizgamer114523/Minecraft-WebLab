@@ -66,6 +66,7 @@ async function startEngine(pack) {
     const isTouchDevice = matchMedia("(pointer: coarse)").matches || (navigator.maxTouchPoints || 0) > 0;
     const renderDistance = isTouchDevice ? 2 : 3;
     const world = createProceduralWorld(registry, { height: 96, seed: 26060, seaLevel: 30 });
+    const isDemoPack = pack.index.schema === "minecraft-weblab/demo-resource-index@1";
     controller = new FirstPersonController(canvas);
     const spawn = world.getSurfaceAtWorld(8, 8);
     controller.position = [8, spawn.height + 13, 8];
@@ -143,13 +144,12 @@ async function startEngine(pack) {
     engineStarted = true;
     loading.classList.add("hidden");
     hud.hidden = false;
-    const isDemoPack = pack.index.schema === "minecraft-weblab/demo-resource-index@1";
     $("world-label").textContent = isDemoPack
       ? `WebLab Demo Pack · ${registry.stats.blockCount} blocos`
       : `Bedrock resource pack · ${registry.stats.blockCount} blocos`;
     $("asset-label").textContent = `${atlas.loadedTextures} texturas carregadas${atlas.overriddenTextures ? ` · ${atlas.overriddenTextures} overrides 512px` : ""}${atlas.failedTextures ? ` · ${atlas.failedTextures} falhas` : ""}`;
     $("engine-label").textContent = `WebGL 2 · atlas ${atlas.width}×${atlas.height} · limite GPU ${gpuLimit}`;
-    $("mesh-label").textContent = `${world.chunks.size} chunks · ${totalQuads.toLocaleString("pt-BR")} faces após greedy meshing`;
+    updateWorldMetrics();
     $("pack-info").textContent = isDemoPack
       ? "Pacote de teste gerado pelo WebLab. Não contém arquivos originais do Minecraft."
       : pack.index.source?.game_version
@@ -165,6 +165,7 @@ async function startEngine(pack) {
       lastFrame = now;
       controller.update(delta);
       refreshChunkWindow();
+      if (!pendingChunks.length) finishChunkWindow();
       if (pendingChunks.length) {
         const nextChunk = pendingChunks.shift();
         const chunk = world.generateChunk(nextChunk.x, nextChunk.z);
