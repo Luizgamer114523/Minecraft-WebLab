@@ -1,1 +1,1 @@
-# Nenhum pacote Python externo é necessário. FFmpeg deve estar disponível no PATH.
+opencv-python>=4.8

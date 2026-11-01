@@ -1,57 +1,52 @@
-# Sentinela AI
+# SENTINELA AI
 
-Painel web para monitoramento e análise local de vídeo.
+Painel web local para monitoramento de uma câmera V360 Pro / CloudBirds, com análise de movimento no navegador e integração PPCS em desenvolvimento.
 
-## Implementado
-- Painel responsivo hospedado na Vercel.
-- Entrada por arquivo e câmera local do navegador.
-- Ponte local para receber uma transmissão RTSP/HTTP.
-- Diagnóstico TCP básico no IP da câmera para procurar portas comuns de RTSP.
-- Conversão de RTSP/HTTP para MJPEG com FFmpeg e exibição no painel local.
-- Detecção simples de movimento no navegador local e feed de eventos.
+## Estado
+- Dashboard responsivo, entrada por vídeo e câmera do navegador.
+- Diagnóstico da rede local.
+- Cliente PPCS baseado no protocolo publicado para a família V360 Pro.
+- Ponte Android que carrega a biblioteca libPPCS_API.so diretamente do APK original selecionado pelo usuário.
+- Stream ao vivo PPCS convertido para MJPEG por FFmpeg e exibido no painel.
+- Detecção simples de movimento local, sem enviar o vídeo à Vercel.
 
-## Executar a ponte local
+## Iniciar no Android (Termux)
 
-Instale Node.js/npm, Python 3 e FFmpeg no mesmo dispositivo que abrirá o painel.
+Pré-requisitos: Android ARM64, Termux, Node.js, Python 3 e FFmpeg.
 
-~~~~bash
-npm install
-npm run build
-python bridge/server.py
-~~~~
-
-Abra http://127.0.0.1:8787. A ponte escuta somente em loopback por padrão. O vídeo e a análise permanecem no dispositivo local; não são enviados à Vercel.
-
-No painel, teste o IP e informe uma URL RTSP/HTTP válida, caso o firmware ofereça uma. Exemplo ilustrativo:
-
-~~~~text
-rtsp://192.168.0.2:554/caminho-da-stream
-~~~~
-
-O endereço acima não foi confirmado para esta câmera. O caminho depende do fabricante e pode exigir habilitação RTSP/ONVIF.
-
-### Termux (Android)
-
-Com o repositório clonado no Termux:
+1. Instale o APK de ponte Android gerado no GitHub Actions. Abra-o e selecione o APK original do V360 Pro enviado pelo usuário. O app extrai a biblioteca nativa localmente e mostra o estado da ponte.
+2. No Termux:
 
 ~~~~bash
 pkg update
 pkg install git nodejs python ffmpeg
+git clone https://github.com/lnzindev/Minecraft-WebLab.git
+cd Minecraft-WebLab
 npm install
 npm run build
-python bridge/server.py
+python bridge/ppcs_server.py
 ~~~~
 
-Abra http://127.0.0.1:8787 no navegador do mesmo celular.
+3. Abra http://127.0.0.1:8787 no navegador do mesmo telefone.
 
-## Limitação V360 Pro / FH8626V1
+A ponte Android precisa permanecer aberta. O servidor web e o vídeo escutam apenas em loopback. Não exponha as portas à internet.
 
-A análise estática do APK V360 Pro revelou referências ao SDK proprietário PPCS/P2P. Até agora, não foi confirmado endpoint RTSP/ONVIF público nem concluído um cliente independente com sessão autenticada para essa câmera. Portanto, esta versão não afirma que a V360 já está conectada diretamente.
+## Conectar a câmera
+No painel, informe o DID/ID e a senha configurada no V360 Pro. O campo de tipo inicia em 43 porque esse é o tipo de referência do projeto de compatibilidade. O tipo real do modelo CMIP-01/FH8626V1 ainda não foi confirmado e pode ser diferente.
 
-O diagnóstico testa portas TCP comuns. Se não houver RTSP/ONVIF, a próxima etapa é implementar um adaptador Android autorizado usando a sessão iniciada pelo próprio V360 Pro, ou localizar uma opção oficial de stream no firmware. A ponte já resolve a conversão e o transporte até o painel.
+A primeira negociação PPCS pode precisar que a câmera tenha acesso à internet. O SDK do fabricante é proprietário. A implementação usa uma biblioteca extraída do APK que o próprio usuário seleciona; nenhum binário proprietário é armazenado no GitHub.
 
-## Privacidade
-- A ponte fica em 127.0.0.1 por padrão.
-- Vídeo e análise permanecem no dispositivo local.
-- Credenciais RTSP não são persistidas nem registradas em logs.
-- Não exponha o servidor em redes públicas.
+## Execução no PC
+Com Android conectado por USB e Depuração USB habilitada, faça:
+
+~~~~bash
+adb forward tcp:8766 tcp:8766
+~~~~
+
+Depois instale Node.js, Python 3 e FFmpeg no PC e execute os mesmos comandos npm install, npm run build e python bridge/ppcs_server.py. Abra http://127.0.0.1:8787.
+
+## Código PPCS de referência
+A camada PPCS e a ponte Android foram adaptadas de GainSec/Super-Awesome-AI-Driver, sob licença MIT. O aviso de licença está em LICENSES/GAINSEC-SAAD-MIT.txt.
+
+## Limitação conhecida
+O projeto de referência foi testado em um equipamento V360 Pro camera-car, tipo 43. A sua câmera é um modelo panorâmico fixo com firmware V31978.1.33.20260608 e chipset FH8626V1. A família do app/SDK é compatível em princípio, mas a sessão e o formato de vídeo ainda precisam ser testados no aparelho real. Não afirmamos que a transmissão da sua câmera já foi confirmada.
