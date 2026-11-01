@@ -75,12 +75,19 @@ public class MainActivity extends Activity {
             return;
         }
         File target = new File(getFilesDir(), "libPPCS_API.so");
-        try (InputStream input = getContentResolver().openInputStream(data.getData());
-             ZipInputStream zip = new ZipInputStream(new BufferedInputStream(input))) {
-            if (input == null) {
+        InputStream selected = null;
+        try {
+            selected = getContentResolver().openInputStream(data.getData());
+            if (selected == null) {
                 setStatus("Não foi possível abrir o arquivo selecionado.");
                 return;
             }
+        } catch (Exception exception) {
+            setStatus("Não foi possível abrir o APK: " + exception);
+            return;
+        }
+        try (InputStream input = selected;
+             ZipInputStream zip = new ZipInputStream(new BufferedInputStream(input))) {
             ZipEntry entry;
             boolean extracted = false;
             byte[] buffer = new byte[8192];

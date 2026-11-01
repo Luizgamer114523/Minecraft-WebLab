@@ -135,7 +135,7 @@ document.querySelector('#sourcesNav').addEventListener('click', () => document.q
 const ppcsPanel = document.createElement('section');
 ppcsPanel.className = 'panel ppcs-panel';
 ppcsPanel.id = 'ppcsPanel';
-ppcsPanel.innerHTML = `
+ppcsPanel.innerHTML = \`
   <div class="ppcs-head">
     <div><span class="eyebrow">CONEXÃO NATIVA · PPCS / V360 PRO</span><h3>Conectar câmera Wi-Fi</h3>
       <p>Usa a biblioteca PPCS extraída do APK V360 Pro no próprio Android. A sessão é autenticada com os dados da sua câmera.</p></div>
@@ -154,7 +154,7 @@ ppcsPanel.innerHTML = `
   </div>
   <div class="ppcs-stream" id="ppcsStreamBox" hidden><div class="ppcs-stream-head"><span>TRANSMISSÃO PPCS</span><span id="ppcsStreamMeta"></span></div><img id="ppcsStream" alt="Transmissão ao vivo da câmera"></div>
   <div class="ppcs-foot">O vídeo passa pela sessão local do Android. Esta conexão não envia a imagem para a Vercel. A câmera precisa concluir a negociação PPCS inicial com a internet disponível.</div>
-`;
+\`;
 document.querySelector('.main').insertBefore(ppcsPanel, document.querySelector('.main footer'));
 
 let ppcsSession = null;
