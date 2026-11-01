@@ -136,7 +136,7 @@ const sbSection = document.createElement('section');
 sbSection.className = 'panel bridge-panel';
 sbSection.id = 'sentinelaBridgePanel';
 sbSection.innerHTML = '<div class="bridge-header"><div><span class="eyebrow">PONTE LOCAL · V360 / RTSP</span><h3>Conectar câmera Wi-Fi</h3><p>O painel hospedado na Vercel não consegue abrir diretamente uma conexão privada da sua LAN. Para vídeo local, inicie a ponte e abra esta interface em <code>http://127.0.0.1:8787</code>.</p></div><span class="bridge-badge" id="sbBridgeBadge">OFFLINE</span></div><div class="bridge-form"><label for="sbCameraHost">IP local da câmera</label><div class="bridge-row"><input id="sbCameraHost" value="192.168.0.2" autocomplete="off" spellcheck="false"><button id="sbProbe" class="secondary-btn">Testar rede</button></div><label for="sbSourceUrl">URL RTSP / HTTP da transmissão</label><div class="bridge-row"><input id="sbSourceUrl" placeholder="rtsp://192.168.0.2:554/caminho-da-stream" autocomplete="off" spellcheck="false"><button id="sbConnect" class="primary-btn">Conectar</button></div><div class="bridge-result" id="sbResult">Verificando a ponte local...</div></div><div class="bridge-video-wrap" id="sbVideoWrap" hidden><img id="sbBridgeVideo" alt="Transmissão da câmera"><span class="bridge-live-tag">● LIVE · PONTE LOCAL</span></div><div class="bridge-foot">A ponte verifica portas TCP comuns e aceita RTSP/HTTP. Ela não quebra nem contorna a autenticação P2P do fabricante.</div>';
-document.querySelector('.main').appendChild(sbSection);
+document.querySelector('.main').insertBefore(sbSection, document.querySelector('.main footer'));
 
 const sb = (id) => document.getElementById(id);
 let sbOnline = false;

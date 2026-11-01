@@ -151,7 +151,7 @@ class Handler(BaseHTTPRequestHandler):
                     with LOCK:
                         frame, active = STATE["frame"], STATE["running"]
                     if frame:
-                        self.wfile.write(b"--frame\\r\\nContent-Type: image/jpeg\\r\\nContent-Length: " + str(len(frame)).encode() + b"\\r\\n\\r\\n" + frame + b"\\r\\n")
+                        self.wfile.write(b"--frame\r\nContent-Type: image/jpeg\r\nContent-Length: " + str(len(frame)).encode() + b"\r\n\r\n" + frame + b"\r\n")
                         self.wfile.flush()
                     elif not active:
                         time.sleep(0.2)
