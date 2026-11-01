@@ -253,3 +253,36 @@ if (sbStop) sbStop.addEventListener('click', async () => {
 sbCheckBridge();
 setInterval(sbCheckBridge, 8000);
 setInterval(sbRefreshEvents, 2500);
+
+
+// Browser-side movement sampling for bridge MJPEG frames.
+const sbMotionCanvas = document.createElement('canvas');
+sbMotionCanvas.width = 160; sbMotionCanvas.height = 90;
+const sbMotionCtx = sbMotionCanvas.getContext('2d', { willReadFrequently: true });
+let sbPreviousPixels = null;
+let sbLastMotion = 0;
+let sbMotionCounter = 0;
+setInterval(() => {
+  const image = sb('sbBridgeVideo');
+  if (!sbBridgeActive || !image || !image.complete || !image.naturalWidth) return;
+  try {
+    sbMotionCtx.drawImage(image, 0, 0, 160, 90);
+    const pixels = sbMotionCtx.getImageData(0, 0, 160, 90).data;
+    let changed = 0, sampled = 0;
+    if (sbPreviousPixels) {
+      for (let i = 0; i < pixels.length; i += 48) {
+        const delta = Math.abs(pixels[i] - sbPreviousPixels[i]) + Math.abs(pixels[i + 1] - sbPreviousPixels[i + 1]) + Math.abs(pixels[i + 2] - sbPreviousPixels[i + 2]);
+        if (delta > 90) changed++;
+        sampled++;
+      }
+      const ratio = changed / Math.max(sampled, 1);
+      if (ratio > 0.10 && Date.now() - sbLastMotion > 5000) {
+        sbLastMotion = Date.now();
+        sbMotionCounter++;
+        sbAddEvent({ id: 'browser-motion-' + sbMotionCounter, timestamp: Date.now() / 1000, title: 'Movimento detectado', detail: 'alteração visual ' + Math.round(ratio * 100) + '%' });
+        const status = sb('sbResult'); if (status) status.textContent = 'Movimento detectado. Análise executada localmente neste navegador.';
+      }
+    }
+    sbPreviousPixels = new Uint8ClampedArray(pixels);
+  } catch {}
+}, 900);

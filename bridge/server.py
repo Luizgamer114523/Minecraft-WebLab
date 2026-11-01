@@ -32,56 +32,71 @@ def add_event(title, detail):
 
 
 def capture_worker(source):
+    import shutil
+    import subprocess
+    process = None
     try:
-        import cv2
-        cap = cv2.VideoCapture(int(source) if source.isdigit() else source)
-        if not cap.isOpened():
-            raise RuntimeError("A fonte não abriu. Verifique IP, caminho RTSP, usuário e senha.")
+        ffmpeg = shutil.which("ffmpeg")
+        if not ffmpeg:
+            raise RuntimeError("FFmpeg não encontrado. Instale FFmpeg e tente novamente.")
+        command = [ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error"]
+        if source.lower().startswith("rtsp://"):
+            command += ["-rtsp_transport", "tcp"]
+        command += ["-i", source, "-an", "-vf", "fps=8,scale=960:-2:force_original_aspect_ratio=decrease",
+                    "-q:v", "6", "-f", "image2pipe", "-vcodec", "mjpeg", "pipe:1"]
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0)
         with LOCK:
-            STATE["capture"] = cap
-        previous = None
-        last_event = 0
+            STATE["capture"] = process
+        buffer = bytearray()
+        first_frame = False
         while True:
             with LOCK:
                 if STATE["stop"]:
                     break
-            ok, frame = cap.read()
-            if not ok:
-                time.sleep(0.08)
-                if not cap.isOpened():
+            chunk = process.stdout.read1(8192)
+            if not chunk:
+                code = process.poll()
+                if code is not None:
+                    if not first_frame:
+                        raise RuntimeError("FFmpeg encerrou sem receber vídeo. Confira URL, caminho, autenticação e compatibilidade RTSP.")
                     break
                 continue
-            small = cv2.resize(frame, (320, 180))
-            gray = cv2.cvtColor(small, cv2.COLOR_BGR2GRAY)
-            if previous is not None:
-                diff = cv2.absdiff(gray, previous)
-                _, mask = cv2.threshold(diff, 24, 255, cv2.THRESH_BINARY)
-                ratio = cv2.countNonZero(mask) / float(mask.size)
-                if ratio > 0.025 and time.time() - last_event > 4.5:
-                    last_event = time.time()
-                    add_event("Movimento detectado", "intensidade " + str(round(ratio * 100)) + "%")
-            previous = gray
-            ok, encoded = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 78])
-            if ok:
+            buffer.extend(chunk)
+            while True:
+                start = buffer.find(b"\xff\xd8")
+                if start < 0:
+                    if len(buffer) > 1:
+                        del buffer[:-1]
+                    break
+                end = buffer.find(b"\xff\xd9", start + 2)
+                if end < 0:
+                    if start:
+                        del buffer[:start]
+                    break
+                frame = bytes(buffer[start:end + 2])
+                del buffer[:end + 2]
+                first_frame = True
                 with LOCK:
-                    STATE["frame"] = encoded.tobytes()
-        cap.release()
+                    STATE["frame"] = frame
+        if process.poll() is None:
+            process.terminate()
     except Exception as exc:
         with LOCK:
             STATE["error"] = str(exc)
     finally:
         with LOCK:
-            cap = STATE.get("capture")
+            process = STATE.get("capture") or process
             STATE["capture"] = None
             STATE["running"] = False
             STATE["thread"] = None
             STATE["frame"] = None
             STATE["stop"] = False
-        if cap:
+        if process and process.poll() is None:
+            process.terminate()
             try:
-                cap.release()
+                process.wait(timeout=2)
             except Exception:
-                pass
+                process.kill()
 
 
 def stop_source():
@@ -185,8 +200,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.send_json({"error": "JSON inválido."}, 400)
         if path == "/api/source/start":
             source = str(payload.get("source", "")).strip()
-            if not (source.isdigit() or re.match(r"^(rtsps?|https?)://", source, re.I)):
-                return self.send_json({"error": "Use o índice de uma câmera ou uma URL RTSP/HTTP."}, 400)
+            if not re.match(r"^(rtsps?|https?)://", source, re.I):
+                return self.send_json({"error": "Use uma URL RTSP/HTTP; câmera local pode usar o recurso do navegador."}, 400)
             stop_source()
             with LOCK:
                 STATE.update({"error": None, "stop": False, "source_label": source_label(source), "running": True})
