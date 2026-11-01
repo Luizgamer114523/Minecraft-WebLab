@@ -36,7 +36,7 @@ app.innerHTML = `
         <div class="panel-note">Os eventos desta versão ficam apenas nesta sessão do navegador.</div>
       </article>
     </section>
-    <section class="panel setup-panel" id="sourcesPanel"><div><span class="eyebrow">PRÓXIMA ETAPA</span><h3>Conectar sua câmera Wi-Fi</h3><p>Esta versão já analisa vídeos enviados e câmeras locais do navegador. A conexão direta com a câmera V360 Pro ainda precisa da integração com o protocolo do fabricante ou de uma ponte local.</p></div><div class="setup-status"><span class="status-pending"></span><b>Integração V360</b><small>Em desenvolvimento</small></div></section>
+    <section class="panel setup-panel" id="sourcesPanel"><div><span class="eyebrow">COMPATIBILIDADE DO DISPOSITIVO</span><h3>Adaptador PPCS preparado</h3><p>A integração nativa está montada. A compatibilidade do firmware panorâmico FH8626V1 e o tipo real do dispositivo ainda precisam ser confirmados na primeira sessão autenticada.</p></div><div class="setup-status"><span class="status-pending"></span><b>Teste da câmera</b><small>Aguardando sessão</small></div></section>
     <footer> SENTINELA AI <span>·</span> Privacidade primeiro. A análise de vídeo acontece localmente nesta página.</footer>
   </main>
 </div>`
@@ -201,6 +201,11 @@ function ppcsAppendEvent(title, detail) {
   }
 }
 async function ppcsCheckBridge() {
+  if (!['127.0.0.1', 'localhost'].includes(window.location.hostname)) {
+    ppcsSetState('USE A VERSÃO LOCAL', false);
+    document.getElementById('ppcsResult').textContent = 'O endereço público da Vercel é a prévia do painel. Para acessar a câmera na sua rede, inicie o backend no Termux e abra http://127.0.0.1:8787 neste mesmo Android.';
+    return;
+  }
   try {
     const status = await ppcsRequest('/api/bridge/status');
     ppcsSetState('PPCS ' + (status.version ?? 'ONLINE'), true);
