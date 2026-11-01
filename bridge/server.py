@@ -44,7 +44,7 @@ def capture_worker(source):
             command += ["-rtsp_transport", "tcp"]
         command += ["-i", source, "-an", "-vf", "fps=8,scale=960:-2:force_original_aspect_ratio=decrease",
                     "-q:v", "6", "-f", "image2pipe", "-vcodec", "mjpeg", "pipe:1"]
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=0)
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192)
         with LOCK:
             STATE["capture"] = process
         buffer = bytearray()
