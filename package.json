@@ -1,19 +1,8 @@
 {
-  "name": "minecraft-weblab",
-  "version": "0.3.0",
+  "name": "sentinela-ai",
   "private": true,
+  "version": "0.1.0",
   "type": "module",
-  "scripts": {
-    "dev": "vite --host 0.0.0.0",
-    "build": "vite build",
-    "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test && node --check api/bedrock-auth.js && node --check api/bedrock-assets.js",
-    "prepare:bedrock-assets": "node tools/bedrock/prepare-web-assets.mjs"
-  },
-  "devDependencies": {
-    "vite": "^6.0.0"
-  },
-  "dependencies": {
-    "@vercel/blob": "^2.5.0"
-  }
+  "scripts": { "dev": "vite", "build": "vite build", "preview": "vite preview" },
+  "devDependencies": { "vite": "^6.3.5" }
 }
